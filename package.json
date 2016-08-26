@@ -7,12 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-     "homebridge-plugin",
-     "homekit"
+    "homebridge-plugin",
+    "homekit"
   ],
   "engines": {
-  "node": ">4.0.0",
-  "homebridge": ">=0.2.0"
+    "node": ">4.0.0",
+    "homebridge": ">=0.2.0"
   },
   "repository": {
     "type": "git",
@@ -20,4 +20,7 @@
   },
   "author": "Robin Temme <zwerch1337@googlemail.com>",
   "license": "MIT"
+  "dependencies": {
+    "request": "^2.74.0"
+  }
 }
