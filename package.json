@@ -19,7 +19,7 @@
     "url": "git+https://github.com/zwerch/homebridge-blinds.git"
   },
   "author": "Robin Temme <zwerch1337@googlemail.com>",
-  "license": "MIT"
+  "license": "ISC",
   "dependencies": {
     "request": "^2.74.0"
   }
