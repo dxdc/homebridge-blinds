@@ -105,3 +105,7 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, method, callback) {
     }
   }.bind(this));
 }
+
+BlindsHTTPAccessory.prototype.getServices = function() {
+  return [this.service];
+}
