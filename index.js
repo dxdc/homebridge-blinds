@@ -80,7 +80,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             .setCharacteristic(Characteristic.PositionState, 2);
 
         callback(null);
-    });
+    }.bind(this));
 }
 
 BlindsHTTPAccessory.prototype.sendStopSignal = function(stop, callback) {
@@ -89,7 +89,7 @@ BlindsHTTPAccessory.prototype.sendStopSignal = function(stop, callback) {
             .setCharacteristic(Characteristic.PositionState, 2); // set to stopped
         this.service
             .setCharacteristic(Characteristic.HoldPosition, false); // reset it
-    });
+    }.bind(this));
 }
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, method, callback) {
