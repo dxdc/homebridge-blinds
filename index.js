@@ -20,9 +20,9 @@ function BlindsHTTPAccessory(log, config) {
     this.httpMethod = config["http_method"] || "POST";
 
     // state vars
-    this.lastPosition = 0; // last known position of the blinds, up by default
+    this.lastPosition = 0; // last known position of the blinds, down by default
     this.currentPositionState = 2; // stopped by default
-    this.currentTargetPosition = 0; // up by default
+    this.currentTargetPosition = 0; // down by default
 
     // register the service and provide the functions
     this.service = new Service.WindowCovering(this.name);
@@ -70,7 +70,7 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
 }
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
-    this.log("Set TargetPosition: %s", this.pos);
+    this.log("Set TargetPosition: %s", pos);
     this.currentTargetPosition = pos;
     const moveUp = (this.currentTargetPosition >= this.lastPosition);
     this.log((moveUp ? "Moving up" : "Moving down"));
@@ -81,7 +81,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function() {
         this.log("Success moving %s", (moveUp ? "up" : "down"))
         this.service
-            .setCharacteristic(Characteristic.CurrentPosition, (moveUp ? 0 : 100));
+            .setCharacteristic(Characteristic.CurrentPosition, (moveUp ? 100 : 0));
         this.service
             .setCharacteristic(Characteristic.PositionState, 2);
 
