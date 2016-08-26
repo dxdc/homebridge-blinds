@@ -79,11 +79,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         .setCharacteristic(Characteristic.PositionState, (moveUp ? 1 : 0));
 
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function() {
-        this.log("Success moving %s", (moveUp ? "up" : "down"))
+        this.log("Success moving %s", (moveUp ? "up (to 100)" : "down (to 0)"))
         this.service
             .setCharacteristic(Characteristic.CurrentPosition, (moveUp ? 100 : 0));
         this.service
             .setCharacteristic(Characteristic.PositionState, 2);
+        this.lastPosition = (moveUp ? 100 : 0);
 
         callback(null);
     }.bind(this));
