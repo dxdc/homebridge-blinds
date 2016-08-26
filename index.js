@@ -16,7 +16,6 @@ function BlindsHTTPAccessory(log, config) {
     this.name = config["name"];
     this.upURL = config["up_url"];
     this.downURL = config["down_url"];
-    this.stopURL = config["stop_url"];
     this.httpMethod = config["http_method"] || "POST";
 
     // state vars
@@ -46,12 +45,6 @@ function BlindsHTTPAccessory(log, config) {
         .getCharacteristic(Characteristic.TargetPosition)
         .on('get', this.getTargetPosition.bind(this))
         .on('set', this.setTargetPosition.bind(this));
-
-    // the hold position bool (for stop)
-    // https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js#L707
-    this.service
-        .getCharacteristic(Characteristic.HoldPosition)
-        .on('set', this.sendStopSignal.bind(this));
 }
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
@@ -87,16 +80,6 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         this.lastPosition = (moveUp ? 100 : 0);
 
         callback(null);
-    }.bind(this));
-}
-
-BlindsHTTPAccessory.prototype.sendStopSignal = function(stop, callback) {
-    this.log("Set HoldPosition: %s", stop);
-    this.httpRequest(this.stopURL, this.httpMethod, function() {
-        this.service
-            .setCharacteristic(Characteristic.PositionState, 2); // set to stopped
-        this.service
-            .setCharacteristic(Characteristic.HoldPosition, false); // reset it
     }.bind(this));
 }
 
