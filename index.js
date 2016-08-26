@@ -55,25 +55,31 @@ function BlindsHTTPAccessory(log, config) {
 }
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
+    this.log("Requested CurrentPosition: %s", this.lastPosition);
     callback(null, this.lastPosition);
 }
 
 BlindsHTTPAccessory.prototype.getPositionState = function(callback) {
+    this.log("Requested PositionState: %s", this.currentPositionState);
     callback(null, this.currentPositionState);
 }
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
+    this.log("Requested TargetPosition: %s", this.currentTargetPosition);
     callback(null, this.currentTargetPosition);
 }
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
+    this.log("Set TargetPosition: %s", this.pos);
     this.currentTargetPosition = pos;
     const moveUp = (this.currentTargetPosition >= this.lastPosition);
+    this.log((moveUp ? "Moving up" : "Moving down"));
 
     this.service
         .setCharacteristic(Characteristic.PositionState, (moveUp ? 1 : 0));
 
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function() {
+        this.log("Success moving %s", (moveUp ? "up" : "down"))
         this.service
             .setCharacteristic(Characteristic.CurrentPosition, (moveUp ? 0 : 100));
         this.service
@@ -84,6 +90,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 }
 
 BlindsHTTPAccessory.prototype.sendStopSignal = function(stop, callback) {
+    this.log("Set HoldPosition: %s", stop);
     this.httpRequest(this.stopURL, this.httpMethod, function() {
         this.service
             .setCharacteristic(Characteristic.PositionState, 2); // set to stopped
