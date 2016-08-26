@@ -1,10 +1,22 @@
 {
   "name": "homebridge-blinds",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A homebridge plugin to control my blinds",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+     "homebridge-plugin",
+     "homekit"
+  ],
+  "engines": {
+  "node": ">4.0.0",
+  "homebridge": ">=0.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zwerch/homebridge-blinds.git"
   },
   "author": "Robin Temme <zwerch1337@googlemail.com>",
   "license": "MIT"
