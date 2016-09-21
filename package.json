@@ -1,6 +1,6 @@
 {
   "name": "homebridge-blinds",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "A homebridge plugin to control my blinds",
   "main": "index.js",
   "scripts": {
