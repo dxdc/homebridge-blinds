@@ -28,6 +28,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "name": "Window",
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
+      "stop_url": "http://1.2.3.4/window/stop",
+      "motion_time": "<time which your blind needs to move from up to down (in milliseconds)>",
       "http_method": "PUT"
     }
 ```
