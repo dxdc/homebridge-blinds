@@ -36,7 +36,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 ```
 
 You can omit `http_method`, it defaults to `POST`.
-You can omit `trigger_stop_at_boundaries`, it defaults to `true`.
+
+`trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
 
 ## Note
 Currently the plugin only emulates the position (it saves it in a variable), because my blinds only support
