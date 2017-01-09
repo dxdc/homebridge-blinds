@@ -17,6 +17,7 @@ function BlindsHTTPAccessory(log, config) {
     this.upURL = config["up_url"];
     this.downURL = config["down_url"];
     this.stopURL = config["stop_url"];
+    this.stopAtBoundaries = config["trigger_stop_at_boundaries"] || true;
     this.httpMethod = config["http_method"] || "POST";
     this.motionTime = config["motion_time"];
 
@@ -117,7 +118,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         clearInterval(localThis.interval);
       }
     }, parseInt(this.motionTime) / 100);
-    if (this.currentTargetPosition == 0 || this.currentTargetPosition == 100) {
+    if (this.stopAtBoundaries && (this.currentTargetPosition == 0 || this.currentTargetPosition == 100)) {
       this.timeout = setTimeout(function() {
         localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
             localThis.log("Success stop adjusting moving %s", (moveUp ? "up (to "+pos+")" : "down (to "+pos+")"))
