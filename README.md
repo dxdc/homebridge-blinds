@@ -28,11 +28,16 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "name": "Window",
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
-      "http_method": "PUT"
+      "stop_url": "http://1.2.3.4/window/stop",
+      "motion_time": "<time which your blind needs to move from up to down (in milliseconds)>",
+      "http_method": "PUT",
+      "trigger_stop_at_boundaries": false
     }
 ```
 
 You can omit `http_method`, it defaults to `POST`.
+
+`trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
 
 ## Note
 Currently the plugin only emulates the position (it saves it in a variable), because my blinds only support
