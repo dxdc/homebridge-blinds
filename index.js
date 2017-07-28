@@ -132,17 +132,21 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 }
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, method, callback) {
-  request({
-    method: method,
-    url: url,
-  }, function(err, response, body) {
-    if (!err && response.statusCode == 200) {
-      callback(null);
-    } else {
-      this.log("Error getting state (status code %s): %s", response.statusCode, err);
-      callback(err);
-    }
-  }.bind(this));
+    request({
+        method: method,
+        url: url,
+    }, function(err, response, body) {
+        if (!err && response && response.statusCode == 200) {
+            callback(null);
+        } else {
+            this.log(
+                "Error getting state (status code %s): %s",
+                (response ? response.statusCode : "not defined"),
+                err
+            );
+            callback(err);
+        }
+    }.bind(this));
 }
 
 BlindsHTTPAccessory.prototype.getServices = function() {
