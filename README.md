@@ -23,13 +23,13 @@ sudo npm install -g homebridge-blinds
 Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 ```js
-   {
+    {
       "accessory": "BlindsHTTP",
       "name": "Window",
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
-      "motion_time": "<time which your blind needs to move from up to down (in milliseconds)>",
+      "motion_time": "<time your blind needs to move from up to down (in milliseconds)>",
       "http_method": "PUT",
       "trigger_stop_at_boundaries": false
     }
@@ -44,4 +44,3 @@ Currently the plugin only emulates the position (it saves it in a variable), bec
 up and down via urls.
 
 Feel free to contribute to make this a better plugin!
-
