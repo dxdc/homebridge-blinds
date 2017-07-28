@@ -70,12 +70,11 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     this.log("Set TargetPosition: %s", pos);
     this.currentTargetPosition = pos;
-    if (this.currentTargetPosition == this.lastPosition)
-    {
-      if (this.interval != null) clearInterval(this.interval);
-      if (this.timeout != null) clearTimeout(this.timeout);
-      this.httpRequest(this.stopURL, this.httpMethod, function() {
-          this.log("Already here")
+    if (this.currentTargetPosition == this.lastPosition) {
+        if (this.interval != null) clearInterval(this.interval);
+        if (this.timeout != null) clearTimeout(this.timeout);
+        this.httpRequest(this.stopURL, this.httpMethod, function() {
+            this.log("Already here");
         }.bind(this));
         callback(null);
         return;
@@ -87,43 +86,47 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         .setCharacteristic(Characteristic.PositionState, (moveUp ? 1 : 0));
 
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function() {
-        this.log("Success moving %s", (moveUp ? "up (to "+pos+")" : "down (to "+pos+")"))
+        this.log(
+            "Success moving %s",
+            (moveUp ? "up (to " + pos + ")" : "down (to " + pos + ")")
+        );
         this.service
             .setCharacteristic(Characteristic.CurrentPosition, pos);
         this.service
             .setCharacteristic(Characteristic.PositionState, 2);
-
     }.bind(this));
 
     var localThis = this;
     if (this.interval != null) clearInterval(this.interval);
     if (this.timeout != null) clearTimeout(this.timeout);
     this.interval = setInterval(function(){
-      localThis.lastPosition += (moveUp ? 1 : -1);
-      //localThis.log("last Position %s, current target position %s", localThis.lastPosition, localThis.currentTargetPosition)
-
-      if (localThis.lastPosition == localThis.currentTargetPosition) {
-        if (localThis.currentTargetPosition != 0 && localThis.currentTargetPosition != 100) {
-          localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
-              localThis.log("Success stop moving %s", (moveUp ? "up (to "+pos+")" : "down (to "+pos+")"))
-              localThis.service
-                  .setCharacteristic(Characteristic.CurrentPosition, pos);
-                  localThis.service
-                  .setCharacteristic(Characteristic.PositionState, 2);
-                  localThis.lastPosition = pos;
-
-
+        localThis.lastPosition += (moveUp ? 1 : -1);
+        if (localThis.lastPosition == localThis.currentTargetPosition) {
+            if (localThis.currentTargetPosition != 0 && localThis.currentTargetPosition != 100) {
+                localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
+                    localThis.log(
+                        "Success stop moving %s",
+                        (moveUp ? "up (to " + pos + ")" : "down (to " + pos + ")")
+                    );
+                    localThis.service
+                        .setCharacteristic(Characteristic.CurrentPosition, pos);
+                    localThis.service
+                        .setCharacteristic(Characteristic.PositionState, 2);
+                    localThis.lastPosition = pos;
                 }.bind(localThis));
+            }
+            clearInterval(localThis.interval);
         }
-        clearInterval(localThis.interval);
-      }
     }, parseInt(this.motionTime) / 100);
     if (this.stopAtBoundaries && (this.currentTargetPosition == 0 || this.currentTargetPosition == 100)) {
-      this.timeout = setTimeout(function() {
-        localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
-            localThis.log("Success stop adjusting moving %s", (moveUp ? "up (to "+pos+")" : "down (to "+pos+")"))
-              }.bind(localThis));
-      }, parseInt(this.motionTime))
+        this.timeout = setTimeout(function() {
+            localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
+                localThis.log(
+                    "Success stop adjusting moving %s",
+                    (moveUp ? "up (to " + pos + ")" : "down (to " + pos + ")")
+                );
+            }.bind(localThis));
+        }, parseInt(this.motionTime));
     }
     callback(null);
 }
@@ -143,5 +146,5 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, method, callback) {
 }
 
 BlindsHTTPAccessory.prototype.getServices = function() {
-  return [this.service];
+    return [this.service];
 }
