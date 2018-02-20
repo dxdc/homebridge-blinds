@@ -73,9 +73,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     if (this.currentTargetPosition == this.lastPosition) {
         if (this.interval != null) clearInterval(this.interval);
         if (this.timeout != null) clearTimeout(this.timeout);
-        this.httpRequest(this.stopURL, this.httpMethod, function() {
-            this.log("Already here");
-        }.bind(this));
+        this.log("Already here");
         callback(null);
         return;
     }
