@@ -30,12 +30,21 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
       "motion_time": "<time your blind needs to move from up to down (in milliseconds)>",
-      "http_method": "PUT",
-      "trigger_stop_at_boundaries": false
+      "http_method": {
+        "body": "{}",
+        "headers": {
+          "API-Token": "aaabbbcccddd"
+        },
+        "method": "PUT"
+      },
+      "trigger_stop_at_boundaries": false,
+      "success_codes": [ 200, 204 ]
     }
 ```
 
-You can omit `http_method`, it defaults to `POST`.
+You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) supports.
+
+`success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
 
 `trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
 
