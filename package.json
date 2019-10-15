@@ -21,6 +21,6 @@
   "author": "Robin Temme <zwerch1337@googlemail.com>",
   "license": "ISC",
   "dependencies": {
-    "request": "^2.74.0"
+    "request": "^2.88.0"
   }
 }
