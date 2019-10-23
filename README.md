@@ -38,7 +38,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
         "method": "PUT"
       },
       "trigger_stop_at_boundaries": false,
-      "success_codes": [ 200, 204 ]
+      "success_codes": [ 200, 204 ],
+      "verbose": false
     }
 ```
 
@@ -47,6 +48,8 @@ You can omit `http_method`, it defaults to `POST`. Note that it can be configure
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
 
 `trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
+
+`verbose` is optional and shows getTargetPosition / getTargetState / getCurrentPosition requests
 
 ## Note
 Currently the plugin only emulates the position (it saves it in a variable), because my blinds only support

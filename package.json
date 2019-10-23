@@ -21,6 +21,7 @@
   "author": "Robin Temme <zwerch1337@googlemail.com>",
   "license": "ISC",
   "dependencies": {
+    "node-persist": "^2.1.0",
     "request": "^2.88.0"
   }
 }

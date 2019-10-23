@@ -4,7 +4,7 @@ var Service, Characteristic;
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
-
+    HomebridgeAPI = homebridge;
     homebridge.registerAccessory("homebridge-blinds", "BlindsHTTP", BlindsHTTPAccessory);
 }
 
@@ -13,21 +13,28 @@ function BlindsHTTPAccessory(log, config) {
     this.log = log;
 
     // configuration vars
-    this.name = config["name"];
-    this.upURL = config["up_url"];
-    this.downURL = config["down_url"];
-    this.stopURL = config["stop_url"];
-    this.stopAtBoundaries = config["trigger_stop_at_boundaries"];
-    this.httpMethod = config["http_method"] || { method: "POST" };
-    this.successCodes = config["success_codes"] || [ 200 ];
-    this.motionTime = config["motion_time"];
+    this.name = config.name;
+    this.upURL = config.up_url;
+    this.downURL = config.down_url;
+    this.stopURL = config.stop_url;
+    this.stopAtBoundaries = config.trigger_stop_at_boundaries;
+    this.httpMethod = config.http_method || { method: "POST" };
+    this.successCodes = config.success_codes || [200];
+    this.motionTime = parseInt(config.motion_time, 10);
+    this.verbose = config.verbose || false;
+
+    this.cacheDirectory = HomebridgeAPI.user.persistPath();
+    this.storage = require('node-persist');
+    this.storage.initSync({
+        dir: this.cacheDirectory,
+        forgiveParseErrors: true
+    });
 
     // state vars
     this.interval = null;
-    this.timeout = null;
-    this.lastPosition = 0; // last known position of the blinds, down by default
-    this.currentPositionState = 2; // stopped by default
-    this.currentTargetPosition = 0; // down by default
+    this.currentPositionState = Characteristic.PositionState.STOPPED; // stopped by default
+    this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
+    this.currentTargetPosition = this.lastPosition;
 
     // register the service and provide the functions
     this.service = new Service.WindowCovering(this.name);
@@ -54,93 +61,91 @@ function BlindsHTTPAccessory(log, config) {
 }
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
-    this.log("Requested CurrentPosition: %s", this.lastPosition);
+    if (this.verbose) {
+        this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
+    }
     callback(null, this.lastPosition);
 }
 
 BlindsHTTPAccessory.prototype.getPositionState = function(callback) {
-    this.log("Requested PositionState: %s", this.currentPositionState);
+    if (this.verbose) {
+        this.log(`Requested PositionState: ${this.currentPositionState}`);
+    }
     callback(null, this.currentPositionState);
 }
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
-    this.log("Requested TargetPosition: %s", this.currentTargetPosition);
+    if (this.verbose) {
+        this.log(`Requested TargetPosition: ${this.currentTargetPosition}%`);
+    }
     callback(null, this.currentTargetPosition);
 }
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
-    this.log("Set TargetPosition: %s", pos);
+    if (this.interval != null) clearInterval(this.interval);
+
     this.currentTargetPosition = pos;
     if (this.currentTargetPosition == this.lastPosition) {
-        if (this.interval != null) clearInterval(this.interval);
-        if (this.timeout != null) clearTimeout(this.timeout);
-        this.log("Already here");
-        callback(null);
-        return;
+        if (this.currentTargetPosition % 100 > 0) {
+            this.log(`Already there: ${this.currentTargetPosition}%`);
+            callback(null);
+            return;
+        } else {
+            this.log(`Already there: ${this.currentTargetPosition}%, re-sending request`);
+        }
     }
+
     const moveUp = (this.currentTargetPosition >= this.lastPosition);
-    this.log((moveUp ? "Moving up" : "Moving down"));
+    const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
+    this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
-    this.service
-        .setCharacteristic(Characteristic.PositionState, (moveUp ? 1 : 0));
+    this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function(err) {
+        if (err) {
+            callback(null);
+            return;
+        }
 
-    this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function() {
-        this.log(
-            "Success moving %s",
-            (moveUp ? "up (to " + pos + ")" : "down (to " + pos + ")")
-        );
-        this.service
-            .setCharacteristic(Characteristic.CurrentPosition, pos);
-        this.service
-            .setCharacteristic(Characteristic.PositionState, 2);
+        const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) / 100 * this.motionTime / 1000;
+        this.log(`Move request sent, waiting ${Math.round(waitDelay * 10)/10} seconds...`);
+        this.currentPositionState = (moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING)
+        this.service.getCharacteristic(Characteristic.PositionState).updateValue(this.currentPositionState);
     }.bind(this));
 
-    var localThis = this;
-    if (this.interval != null) clearInterval(this.interval);
-    if (this.timeout != null) clearTimeout(this.timeout);
-    this.interval = setInterval(function(){
-        localThis.lastPosition += (moveUp ? 1 : -1);
-        if (localThis.lastPosition == localThis.currentTargetPosition) {
-            if (localThis.currentTargetPosition != 0 && localThis.currentTargetPosition != 100) {
-                localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
-                    localThis.log(
-                        "Success stop moving %s",
-                        (moveUp ? "up (to " + pos + ")" : "down (to " + pos + ")")
-                    );
-                    localThis.service
-                        .setCharacteristic(Characteristic.CurrentPosition, pos);
-                    localThis.service
-                        .setCharacteristic(Characteristic.PositionState, 2);
-                    localThis.lastPosition = pos;
-                }.bind(localThis));
+    let self = this;
+    this.interval = setInterval(function() {
+        if (self.lastPosition == self.currentTargetPosition) {
+            self.currentPositionState = Characteristic.PositionState.STOPPED;
+            self.service.getCharacteristic(Characteristic.PositionState).updateValue(self.currentPositionState);
+            self.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(self.currentTargetPosition);
+
+            self.storage.setItemSync(self.name, self.currentTargetPosition);
+            self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
+
+            if (self.stopAtBoundaries || self.currentTargetPosition % 100 > 0) {
+                self.httpRequest(self.stopURL, self.httpMethod, function(err) {
+                    if (err) {
+                        self.log("Stop request failed");
+                    } else {
+                        self.log("Stop request sent");
+                    }
+                }.bind(self));
             }
-            clearInterval(localThis.interval);
+            clearInterval(self.interval);
+        } else {
+            self.lastPosition += (moveUp ? 1 : -1);
         }
-    }, parseInt(this.motionTime) / 100);
-    if (this.stopAtBoundaries && (this.currentTargetPosition == 0 || this.currentTargetPosition == 100)) {
-        this.timeout = setTimeout(function() {
-            localThis.httpRequest(localThis.stopURL, localThis.httpMethod, function() {
-                localThis.log(
-                    "Success stop adjusting moving %s",
-                    (moveUp ? "up (to " + pos + ")" : "down (to " + pos + ")")
-                );
-            }.bind(localThis));
-        }, parseInt(this.motionTime));
-    }
+    }, this.motionTime / 100);
+
     callback(null);
 }
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
-    var options = Object.assign({url: url}, methods);
+    var options = Object.assign({ url: url }, methods);
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             callback(null);
         } else {
-            this.log(
-                "Error sending request (HTTP status code %s): %s",
-                (response ? response.statusCode : "not defined"),
-                err
-            );
+            this.log(`Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
             callback(err);
         }
     }.bind(this));
