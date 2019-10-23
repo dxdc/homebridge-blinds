@@ -115,9 +115,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     let self = this;
 
     if (this.responseLag > 0) {
+        if (this.verbose) {
+            this.log(`Waiting ${Math.round(this.responseLag / 100) / 10} seconds for response lag`);
+        }
         setTimeout(function() {
             if (self.verbose) {
-                self.log(`Waiting ${Math.round(self.responseLag / 100) / 10} seconds for response lag`);
+                self.log("Response lag ended");
             }
         }, this.responseLag);
     }
