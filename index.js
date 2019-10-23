@@ -20,7 +20,8 @@ function BlindsHTTPAccessory(log, config) {
     this.stopAtBoundaries = config.trigger_stop_at_boundaries;
     this.httpMethod = config.http_method || { method: "POST" };
     this.successCodes = config.success_codes || [200];
-    this.motionTime = parseInt(config.motion_time, 10);
+    this.motionTime = parseInt(config.motion_time, 10) || 10000;
+    this.responseLag = parseInt(config.response_lag, 10) || 0;
     this.verbose = config.verbose || false;
 
     this.cacheDirectory = HomebridgeAPI.user.persistPath();
@@ -112,6 +113,15 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     }.bind(this));
 
     let self = this;
+
+    if (this.responseLag > 0) {
+        setTimeout(function() {
+            if (self.verbose) {
+                self.log(`Waiting ${Math.round(self.responseLag / 100) / 10} seconds for response lag`);
+            }
+        }, this.responseLag);
+    }
+
     this.interval = setInterval(function() {
         if (self.lastPosition == self.currentTargetPosition) {
             self.currentPositionState = Characteristic.PositionState.STOPPED;

@@ -29,7 +29,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
-      "motion_time": "<time your blind needs to move from up to down (in milliseconds)>",
+      "motion_time": 10000,
+      "response_lag": 0,
       "http_method": {
         "body": "{}",
         "headers": {
@@ -44,6 +45,10 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 ```
 
 You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) supports.
+
+`motion_time` is the time, in milliseconds, for your blinds to move from up to down.
+
+`response_lag` is an optional parameter used to improve the calculation for setting a specific blinds position. `expected_wait_time` = (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`.
 
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
 
