@@ -32,6 +32,7 @@ function BlindsHTTPAccessory(log, config) {
     });
 
     // state vars
+    this.timeout = null;
     this.interval = null;
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
     this.currentTargetPosition = this.lastPosition;
@@ -68,6 +69,7 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
 }
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
+    if (this.timeout != null) clearTimeout(this.timeout);
     if (this.interval != null) clearInterval(this.interval);
 
     this.currentTargetPosition = pos;
@@ -85,49 +87,47 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
     this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
+    let self = this;
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function(err) {
         if (err) {
             callback(null);
             return;
         }
 
-        const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) / 100 * this.motionTime / 1000;
-        this.log(`Move request sent, waiting ${Math.round(waitDelay * 10)/10} seconds...`);
-    }.bind(this));
+        this.storage.setItemSync(this.name, this.currentTargetPosition);
+        const motionTimeSinglePct = this.motionTime / 100;
 
-    let self = this;
+        let needsSendStopRequest = this.stopAtBoundaries || this.currentTargetPosition % 100 > 0;
+        const sendStopAtPositionDiff = Math.round(this.responseLag / motionTimeSinglePct);
 
-    if (this.responseLag > 0) {
-        if (this.verbose) {
-            this.log(`Waiting ${Math.round(this.responseLag / 100) / 10} seconds for response lag`);
-        }
-        setTimeout(function() {
-            if (self.verbose) {
-                self.log("Response lag ended");
-            }
+        const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeSinglePct;
+        this.log(`Move request sent, waiting ${Math.round(waitDelay / 100) / 10}s (+ response lag of ${Math.round(this.responseLag / 100) / 10}s)...`);
+
+        this.timeout = setTimeout(function() {
+            self.interval = setInterval(function() {
+                if (needsSendStopRequest && Math.abs(self.currentTargetPosition - self.lastPosition) <= sendStopAtPositionDiff) {
+                    // Stop command needs to be sent before final position is reached to account for response lag
+                    needsSendStopRequest = false;
+                    self.httpRequest(self.stopURL, self.httpMethod, function(err) {
+                        if (err) {
+                            self.log.warn("Stop request failed");
+                        } else {
+                            self.log("Stop request sent");
+                        }
+                    }.bind(self));
+                }
+
+                if (self.lastPosition == self.currentTargetPosition) {
+                    self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
+                    self.service.getCharacteristic(Characteristic.CurrentPosition)
+                        .updateValue(self.lastPosition);
+                    clearInterval(self.interval);
+                } else {
+                    self.lastPosition += (moveUp ? 1 : -1);
+                }
+            }, motionTimeSinglePct);
         }, this.responseLag);
-    }
-
-    self.storage.setItemSync(self.name, self.currentTargetPosition);
-    this.interval = setInterval(function() {
-        if (self.lastPosition == self.currentTargetPosition) {
-            self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
-            self.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(self.lastPosition);
-
-            if (self.stopAtBoundaries || self.currentTargetPosition % 100 > 0) {
-                self.httpRequest(self.stopURL, self.httpMethod, function(err) {
-                    if (err) {
-                        self.log.warn("Stop request failed");
-                    } else {
-                        self.log("Stop request sent");
-                    }
-                }.bind(self));
-            }
-            clearInterval(self.interval);
-        } else {
-            self.lastPosition += (moveUp ? 1 : -1);
-        }
-    }, this.motionTime / 100);
+    }.bind(this));
 
     callback(null);
 }
