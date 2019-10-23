@@ -33,7 +33,6 @@ function BlindsHTTPAccessory(log, config) {
 
     // state vars
     this.interval = null;
-    this.currentPositionState = Characteristic.PositionState.STOPPED; // stopped by default
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
     this.currentTargetPosition = this.lastPosition;
 
@@ -45,13 +44,6 @@ function BlindsHTTPAccessory(log, config) {
     this.service
         .getCharacteristic(Characteristic.CurrentPosition)
         .on('get', this.getCurrentPosition.bind(this));
-
-    // the position state
-    // 0 = DECREASING; 1 = INCREASING; 2 = STOPPED;
-    // https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js#L1138
-    this.service
-        .getCharacteristic(Characteristic.PositionState)
-        .on('get', this.getPositionState.bind(this));
 
     // the target position (0-100%)
     // https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js#L1564
@@ -66,13 +58,6 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
         this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
     }
     callback(null, this.lastPosition);
-}
-
-BlindsHTTPAccessory.prototype.getPositionState = function(callback) {
-    if (this.verbose) {
-        this.log(`Requested PositionState: ${this.currentPositionState}`);
-    }
-    callback(null, this.currentPositionState);
 }
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
@@ -108,8 +93,6 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
         const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) / 100 * this.motionTime / 1000;
         this.log(`Move request sent, waiting ${Math.round(waitDelay * 10)/10} seconds...`);
-        this.currentPositionState = (moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING)
-        this.service.getCharacteristic(Characteristic.PositionState).updateValue(this.currentPositionState);
     }.bind(this));
 
     let self = this;
@@ -125,14 +108,11 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         }, this.responseLag);
     }
 
+    self.storage.setItemSync(self.name, self.currentTargetPosition);
     this.interval = setInterval(function() {
         if (self.lastPosition == self.currentTargetPosition) {
-            self.currentPositionState = Characteristic.PositionState.STOPPED;
-            self.service.getCharacteristic(Characteristic.PositionState).updateValue(self.currentPositionState);
-            self.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(self.currentTargetPosition);
-
-            self.storage.setItemSync(self.name, self.currentTargetPosition);
             self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
+            self.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(self.lastPosition);
 
             if (self.stopAtBoundaries || self.currentTargetPosition % 100 > 0) {
                 self.httpRequest(self.stopURL, self.httpMethod, function(err) {
