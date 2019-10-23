@@ -121,6 +121,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
                     self.service.getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
+                    self.service.getCharacteristic(Characteristic.PositionState)
+                        .updateValue(Characteristic.PositionState.STOPPED);
                     clearInterval(self.interval);
                 } else {
                     self.lastPosition += (moveUp ? 1 : -1);
