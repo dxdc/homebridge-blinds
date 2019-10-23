@@ -14,9 +14,9 @@ function BlindsHTTPAccessory(log, config) {
 
     // configuration vars
     this.name = config.name;
-    this.upURL = config.up_url;
-    this.downURL = config.down_url;
-    this.stopURL = config.stop_url;
+    this.upURL = config.up_url || false;
+    this.downURL = config.down_url || false;
+    this.stopURL = config.stop_url || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
     this.httpMethod = config.http_method || { method: "POST" };
     this.successCodes = config.success_codes || [200];
@@ -134,7 +134,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             if (self.stopAtBoundaries || self.currentTargetPosition % 100 > 0) {
                 self.httpRequest(self.stopURL, self.httpMethod, function(err) {
                     if (err) {
-                        self.log("Stop request failed");
+                        self.log.warn("Stop request failed");
                     } else {
                         self.log("Stop request sent");
                     }
@@ -150,12 +150,14 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 }
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
+    if (!url) callback(null);
+
     var options = Object.assign({ url: url }, methods);
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             callback(null);
         } else {
-            this.log(`Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
+            this.log.error(`Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
             callback(err);
         }
     }.bind(this));
