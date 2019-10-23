@@ -44,11 +44,17 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
     }
 ```
 
+You can omit any of the `up_url`, `down_url`, etc. if you don't want these to send a command.
+
 You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) supports.
 
-`motion_time` is the time, in milliseconds, for your blinds to move from up to down.
+`motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running.
 
-`response_lag` is an optional parameter used to improve the calculation for setting a specific blinds position. `expected_wait_time` = (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`.
+`response_lag` is an optional parameter used to improve the calculation for setting a specific blinds position. It takes into account the delay of the device you are using control the blinds (RF transmitter or otherwise). This is useful since it will do a better job of not under/overshooting the target:
+
+1. Send HTTP command to url
+2. Wait `response_lag`; expected finish time (`current_position` - `target_position`) / 100 * `motion_time`
+4. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
 
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
 

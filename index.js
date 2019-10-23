@@ -32,8 +32,9 @@ function BlindsHTTPAccessory(log, config) {
     });
 
     // state vars
-    this.timeout = null;
-    this.interval = null;
+    this.stopTimeout = null;
+    this.lagTimeout = null;
+    this.stepInterval = null;
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
     this.currentTargetPosition = this.lastPosition;
 
@@ -69,8 +70,9 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
 }
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
-    if (this.timeout != null) clearTimeout(this.timeout);
-    if (this.interval != null) clearInterval(this.interval);
+    if (this.lagTimeout != null) clearTimeout(this.lagTimeout);
+    if (this.stopTimeout != null) clearTimeout(this.stopTimeout);
+    if (this.stepInterval != null) clearInterval(this.stepInterval);
 
     this.currentTargetPosition = pos;
     if (this.currentTargetPosition == this.lastPosition) {
@@ -88,6 +90,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
     let self = this;
+
+    const startTimestamp = Date.now();
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function(err) {
         if (err) {
             callback(null);
@@ -95,40 +99,42 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         }
 
         this.storage.setItemSync(this.name, this.currentTargetPosition);
-        const motionTimeSinglePct = this.motionTime / 100;
+        const motionTimeStep = this.motionTime / 100;
+        const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
-        let needsSendStopRequest = this.stopAtBoundaries || this.currentTargetPosition % 100 > 0;
-        const sendStopAtPositionDiff = (motionTimeSinglePct > 0) ? Math.round(this.responseLag / motionTimeSinglePct) : 0;
+        this.log(`Move request sent (${Date.now() - startTimestamp} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`);
 
-        const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeSinglePct;
-        this.log(`Move request sent, waiting ${Math.round(waitDelay / 100) / 10}s (+ response lag of ${Math.round(this.responseLag / 100) / 10}s)...`);
+        // Send stop command before target position is reached to account for response_lag
+        if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
+            this.stopTimeout = setTimeout(function() {
+                self.httpRequest(self.stopURL, self.httpMethod, function(err) {
+                    if (err) {
+                        self.log.warn("Stop request failed");
+                    } else {
+                        self.log("Stop request sent");
+                    }
+                }.bind(self));
+            }, Math.max(waitDelay, 0));
+        }
 
-        this.timeout = setTimeout(function() {
-            self.interval = setInterval(function() {
-                if (needsSendStopRequest && Math.abs(self.currentTargetPosition - self.lastPosition) <= sendStopAtPositionDiff) {
-                    // Stop command needs to be sent before final position is reached to account for response lag
-                    needsSendStopRequest = false;
-                    self.httpRequest(self.stopURL, self.httpMethod, function(err) {
-                        if (err) {
-                            self.log.warn("Stop request failed");
-                        } else {
-                            self.log("Stop request sent");
-                        }
-                    }.bind(self));
-                }
-
+        // Delay for response lag, then track movement of blinds
+        this.lagTimeout = setTimeout(function() {
+            if (self.verbose) {
+                self.log("Timeout finished");
+            }
+            self.stepInterval = setInterval(function() {
                 if (self.lastPosition == self.currentTargetPosition) {
                     self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
                     self.service.getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
                     self.service.getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
-                    clearInterval(self.interval);
+                    clearInterval(self.stepInterval);
                 } else {
                     self.lastPosition += (moveUp ? 1 : -1);
                 }
-            }, motionTimeSinglePct);
-        }, this.responseLag);
+            }, motionTimeStep);
+        }, Math.max(this.responseLag, 0));
     }.bind(this));
 
     callback(null);
