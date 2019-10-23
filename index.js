@@ -17,7 +17,7 @@ function BlindsHTTPAccessory(log, config) {
     this.upURL = config.up_url;
     this.downURL = config.down_url;
     this.stopURL = config.stop_url;
-    this.stopAtBoundaries = config.trigger_stop_at_boundaries;
+    this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
     this.httpMethod = config.http_method || { method: "POST" };
     this.successCodes = config.success_codes || [200];
     this.motionTime = parseInt(config.motion_time, 10) || 10000;
