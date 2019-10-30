@@ -53,6 +53,9 @@ function BlindsHTTPAccessory(log, config) {
         .getCharacteristic(Characteristic.TargetPosition)
         .on('get', this.getTargetPosition.bind(this))
         .on('set', this.setTargetPosition.bind(this));
+
+    this.service.getCharacteristic(Characteristic.PositionState)
+        .updateValue(Characteristic.PositionState.STOPPED);
 }
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
