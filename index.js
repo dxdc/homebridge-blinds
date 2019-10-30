@@ -54,7 +54,8 @@ function BlindsHTTPAccessory(log, config) {
         .on('get', this.getTargetPosition.bind(this))
         .on('set', this.setTargetPosition.bind(this));
 
-    this.service.getCharacteristic(Characteristic.PositionState)
+    this.service
+        .getCharacteristic(Characteristic.PositionState)
         .updateValue(Characteristic.PositionState.STOPPED);
 }
 
