@@ -21,6 +21,7 @@ function BlindsHTTPAccessory(log, config) {
     this.upURL = config.up_url || false;
     this.downURL = config.down_url || false;
     this.stopURL = config.stop_url || false;
+    this.positionURL = config.position_url || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
     this.httpMethod = config.http_method || { method: "POST" };
     this.successCodes = config.success_codes || [200];
@@ -64,6 +65,18 @@ function BlindsHTTPAccessory(log, config) {
 }
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
+    if (this.positionURL) {
+        request(this.positionURL, function(err, response, body) {
+        if (!err && response && this.successCodes.includes(response.statusCode)) {
+            const pos = Number(body);
+            if (pos >= 0 && pos <= 100) {
+                this.lastPosition = pos;
+            }
+        } else {
+            this.log.error(`Error sending CurrentPosition request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
+        }
+    }.bind(this));
+
     if (this.verbose) {
         this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
     }
@@ -133,6 +146,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             self.stepInterval = setInterval(function() {
                 if (self.lastPosition == self.currentTargetPosition) {
                     self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
+                    // TODO: modify behavior based on self.positionURL
                     self.service.getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
                     self.service.getCharacteristic(Characteristic.PositionState)
