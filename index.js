@@ -11,7 +11,11 @@ module.exports = function(homebridge) {
 function BlindsHTTPAccessory(log, config) {
     // global vars
     this.log = log;
-
+    if (!config) {
+        this.log.info('No configuration found for homebridge-blinds');
+        return;
+    }
+    
     // configuration vars
     this.name = config.name;
     this.upURL = config.up_url || false;
