@@ -15,7 +15,7 @@ function BlindsHTTPAccessory(log, config) {
         this.log.info('No configuration found for homebridge-blinds');
         return;
     }
-    
+
     // configuration vars
     this.name = config.name;
     this.upURL = config.up_url || false;
@@ -67,15 +67,16 @@ function BlindsHTTPAccessory(log, config) {
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     if (this.positionURL) {
         request(this.positionURL, function(err, response, body) {
-        if (!err && response && this.successCodes.includes(response.statusCode)) {
-            const pos = Number(body);
-            if (pos >= 0 && pos <= 100) {
-                this.lastPosition = pos;
+            if (!err && response && this.successCodes.includes(response.statusCode)) {
+                const pos = Number(body);
+                if (pos >= 0 && pos <= 100) {
+                    this.lastPosition = pos;
+                }
+            } else {
+                this.log.error(`Error sending CurrentPosition request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
             }
-        } else {
-            this.log.error(`Error sending CurrentPosition request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
-        }
-    }.bind(this));
+        }.bind(this));
+    }
 
     if (this.verbose) {
         this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
