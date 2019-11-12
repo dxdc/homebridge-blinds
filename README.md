@@ -29,6 +29,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
+      "position_url": "http://1.2.3.4/position",
       "motion_time": 10000,
       "response_lag": 0,
       "http_method": {
@@ -45,6 +46,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 ```
 
 You can omit any of the `up_url`, `down_url`, etc. if you don't want these to send a command.
+
+`position_url` is optional, but must report the current state of the blinds as an integer (0-100) and via GET. Headers or other methods specified in `http_method` are ignored.
 
 You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) supports.
 
