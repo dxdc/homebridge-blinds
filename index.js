@@ -71,6 +71,8 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
                 const pos = Number(body);
                 if (pos >= 0 && pos <= 100) {
                     this.lastPosition = pos;
+                } else {
+                    this.log.warn(`Invalid position response received (should be 0-100): ${pos}`);
                 }
             } else {
                 this.log.error(`Error sending CurrentPosition request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
