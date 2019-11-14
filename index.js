@@ -68,7 +68,7 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     if (this.positionURL) {
         request(this.positionURL, function(err, response, body) {
             if (!err && response && this.successCodes.includes(response.statusCode)) {
-                const pos = Number(body);
+                const pos = parseInt(body, 10);
                 if (pos >= 0 && pos <= 100) {
                     this.lastPosition = pos;
                 } else {
