@@ -63,10 +63,65 @@ You can omit `http_method`, it defaults to `POST`. Note that it can be configure
 
 `trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
 
-`verbose` is optional and shows getTargetPosition / getTargetState / getCurrentPosition requests
+`verbose` is optional and shows `getTargetPosition` / `getTargetState` / `getCurrentPosition` requests
 
 ## Note
 Currently the plugin only emulates the position (it saves it in a variable), because my blinds only support
 up and down via urls.
 
 Feel free to contribute to make this a better plugin!
+
+## Specific configurations by manufacturer:
+
+### Bond
+
+- [Product Link](https://bondhome.io/)
+- [Homebridge-Bond](https://github.com/aarons22/homebridge-bond)
+- [Bond API](http://docs-local.appbond.com/)
+
+Sample `config.json`, noting that you need to replace `1.2.3.4` with your Bond IP address, `<deviceId>` with your deviceId, and `<BondToken>` with your Bond token. 
+
+These values can be obtained from the Bond app, under `Device settings` for any individual shades.
+
+```js
+    {
+      "accessory": "BlindsHTTP", 
+      "name": "Dining Room Shades", 
+      "up_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Open",
+      "down_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Close", 
+      "stop_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Hold", 
+      "motion_time": 11000, 
+      "response_lag": 1000, 
+      "http_method": {
+        "body": "{}", 
+        "headers": {
+          "BOND-Token": "<BondToken>"
+        }, 
+        "method": "PUT"
+      }, 
+      "success_codes": [ 204 ], 
+      "trigger_stop_at_boundaries": false, 
+    }
+```
+
+Alternatively, sample shell script to retrieve the list of Bond deviceId's using the local API, replacing `1.2.3.4` with your Bond IP address, and `<BondToken>` with your Bond token:
+
+```sh
+#!/bin/sh
+
+# CONFIGURE BOND_IP AND BOND_TOKEN TO MATCH YOUR CONFIGURATION
+BOND_IP="1.2.3.4"
+BOND_TOKEN="<BondToken>"
+
+if ! [ -x "$(command -v jq)" ]; then
+  echo 'Error: jq is not installed.' >&2
+  exit 1
+fi
+
+BOND_DEVICES=$( curl -s "http://${BOND_IP}/v2/devices" -X GET -d "{\"_token\": \"${BOND_TOKEN}\"}" | jq -r 'keys[]' | grep -v '_' )
+
+while read -r line; do
+   DEVICE_DETAILS=$( curl -sH "BOND-Token: ${BOND_TOKEN}" "http://${BOND_IP}/v2/devices/${line}" | jq '.name' )
+   echo "${DEVICE_DETAILS} ${line}"
+done <<< "${BOND_DEVICES}"
+```

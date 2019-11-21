@@ -1,0 +1,68 @@
+{
+	"pluginAlias": "BlindsHTTP",
+	"pluginType": "accessory",
+	"singular": false,
+	"schema": {
+		"type": "object",
+		"properties": {
+			"name": {
+				"title": "Name",
+				"type": "string",
+				"required": true
+			},
+			"up_url": {
+				"title": "Up URL",
+				"type": "string",
+				"description": "The URL to send the 'UP' command"
+			},
+			"down_url": {
+				"title": "Down URL",
+				"type": "string",
+				"description": "The URL to send the 'DOWN' command."
+			},
+			"stop_url": {
+				"title": "Stop URL",
+				"type": "string",
+				"description": "The URL to send the 'STOP' command."
+			},
+			"http_method": {
+				"title": "HTTP Parameters",
+				"type": "object",
+				"default": {
+					"method": "POST"
+				},
+				"description": "JSON object with custom request HTTP parameters/headers for up/down/stop URL's."
+			},
+			"motion_time": {
+				"title": "Motion Time",
+				"type": "number",
+				"default": 10000,
+				"description": "Time (in ms) for blinds to move completely from up to down."
+			},
+			"response_lag": {
+				"title": "Response Lag",
+				"type": "number",
+				"default": 0,
+				"description": "Time (in ms) for device to respond after HTTP request. Optional parameter to improve time calculation when setting intermediate values."
+			},
+			"trigger_stop_at_boundaries": {
+				"title": "Send Stop at Boundaries",
+				"type": "boolean",
+				"default": false,
+				"description": "Send STOP command at boundaries (0/100) - used if blinds do not stop automatically."
+			},
+			"success_codes": {
+				"title": "HTTP success codes",
+				"type": "array",
+				"default": [200],
+				"description": "Array of response codes that are interpreted as a successful reply."
+			},
+			"verbose": {
+				"title": "Verbose logging",
+				"type": "boolean",
+				"default": false,
+				"description": "Verbose logging - show getTargetPosition / getTargetState / getCurrentPosition requests."
+			}
+		}
+	}
+}

@@ -1,0 +1,20 @@
+language: node_js
+node_js:
+  - 8
+  - 9
+  - 10
+  - node
+
+install: yarn
+cache: yarn
+
+script:
+  - yarn lint
+  - yarn test
+
+deploy:
+    provider: npm
+    email: "$NPM_EMAIL"
+    api_key: "$NPM_API_KEY"
+    on:
+        tags: true

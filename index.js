@@ -1,12 +1,16 @@
-var request = require("request");
-var Service, Characteristic;
+let request = require('request');
+let Service, Characteristic, HomebridgeAPI;
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     HomebridgeAPI = homebridge;
-    homebridge.registerAccessory("homebridge-blinds", "BlindsHTTP", BlindsHTTPAccessory);
-}
+    homebridge.registerAccessory(
+        'homebridge-blinds',
+        'BlindsHTTP',
+        BlindsHTTPAccessory
+    );
+};
 
 function BlindsHTTPAccessory(log, config) {
     // global vars
@@ -23,7 +27,7 @@ function BlindsHTTPAccessory(log, config) {
     this.stopURL = config.stop_url || false;
     this.positionURL = config.position_url || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
-    this.httpMethod = config.http_method || { method: "POST" };
+    this.httpMethod = config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
     this.motionTime = parseInt(config.motion_time, 10) || 10000;
     this.responseLag = parseInt(config.response_lag, 10) || 0;
@@ -84,14 +88,14 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
         this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
     }
     callback(null, this.lastPosition);
-}
+};
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
     if (this.verbose) {
         this.log(`Requested TargetPosition: ${this.currentTargetPosition}%`);
     }
     callback(null, this.currentTargetPosition);
-}
+};
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     if (this.lagTimeout != null) clearTimeout(this.lagTimeout);
@@ -105,11 +109,15 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             callback(null);
             return;
         } else {
-            this.log(`Already there: ${this.currentTargetPosition}%, re-sending request`);
+            this.log(
+                `Already there: ${this.currentTargetPosition}%, re-sending request`
+            );
         }
     }
 
-    const moveUp = (this.currentTargetPosition > this.lastPosition || this.currentTargetPosition == 1);
+    const moveUp =
+        this.currentTargetPosition > this.lastPosition ||
+        this.currentTargetPosition == 1;
     const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
     this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
@@ -126,16 +134,18 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         const motionTimeStep = this.motionTime / 100;
         const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
-        this.log(`Move request sent (${Date.now() - startTimestamp} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`);
+        this.log(
+            `Move request sent (${Date.now() - startTimestamp} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
+        );
 
         // Send stop command before target position is reached to account for response_lag
         if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
             this.stopTimeout = setTimeout(function() {
                 self.httpRequest(self.stopURL, self.httpMethod, function(err) {
                     if (err) {
-                        self.log.warn("Stop request failed");
+                        self.log.warn('Stop request failed');
                     } else {
-                        self.log("Stop request sent");
+                        self.log('Stop request sent');
                     }
                 }.bind(self));
             }, Math.max(waitDelay, 0));
@@ -144,41 +154,53 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         // Delay for response lag, then track movement of blinds
         this.lagTimeout = setTimeout(function() {
             if (self.verbose) {
-                self.log("Timeout finished");
+                self.log('Timeout finished');
             }
             self.stepInterval = setInterval(function() {
                 if (self.lastPosition == self.currentTargetPosition) {
-                    self.log(`End ${moveMessage} (to ${self.currentTargetPosition}%)`);
                     // TODO: modify behavior based on self.positionURL
-                    self.service.getCharacteristic(Characteristic.CurrentPosition)
+                    self.log(
+                        `End ${moveMessage} (to ${self.currentTargetPosition}%)`
+                    );
+                    self.service
+                        .getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
-                    self.service.getCharacteristic(Characteristic.PositionState)
+                    self.service
+                        .getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
                     clearInterval(self.stepInterval);
                 } else {
-                    self.lastPosition += (moveUp ? 1 : -1);
+                    self.lastPosition += moveUp ? 1 : -1;
                 }
             }, motionTimeStep);
         }, Math.max(this.responseLag, 0));
     }.bind(this));
 
     callback(null);
-}
+};
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     if (!url) callback(null);
 
-    var options = Object.assign({ url: url }, methods);
+    // backward compatibility
+    if (methods && typeof methods.valueOf() === 'string') {
+        methods = { method: methods };
+    }
+
+    const options = Object.assign({ url: url }, methods);
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             callback(null);
         } else {
-            this.log.error(`Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
+            this.log.error(
+                `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
+            );
+            this.log.error(`Body: ${body}`);
             callback(err);
         }
     }.bind(this));
-}
+};
 
 BlindsHTTPAccessory.prototype.getServices = function() {
     return [this.service];
-}
+};
