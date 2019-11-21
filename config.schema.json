@@ -25,6 +25,11 @@
 				"type": "string",
 				"description": "The URL to send the 'STOP' command."
 			},
+			"position_url": {
+				"title": "Position URL",
+				"type": "string",
+				"description": "The URL to get the current blinds position (must be 0-100 response)."
+			},
 			"http_method": {
 				"title": "HTTP Parameters",
 				"type": "object",
