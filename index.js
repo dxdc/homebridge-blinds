@@ -151,7 +151,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     if (!url) callback(null);
 
-    var options = Object.assign({ url: url }, methods);
+    // backward compatibility
+    if (methods && typeof methods.valueOf() === 'string') {
+        methods = { method: methods };
+    }
+
+    const options = Object.assign({ url: url }, methods);
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             callback(null);
