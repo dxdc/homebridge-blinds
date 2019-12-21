@@ -101,7 +101,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
     const moveUp =
         this.currentTargetPosition > this.lastPosition ||
-        this.currentTargetPosition == 1;
+        this.currentTargetPosition == 100;
     const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
     this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
