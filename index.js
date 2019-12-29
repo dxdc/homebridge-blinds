@@ -124,6 +124,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
         // Send stop command before target position is reached to account for response_lag
         if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
+            self.log('Stop command will be requested');
             this.stopTimeout = setTimeout(function() {
                 self.httpRequest(self.stopURL, self.httpMethod, function(err) {
                     if (err) {
@@ -163,7 +164,10 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 };
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
-    if (!url) callback(null);
+    if (!url) {
+        callback(null);
+        return;
+    }
 
     // backward compatibility
     if (methods && typeof methods.valueOf() === 'string') {
