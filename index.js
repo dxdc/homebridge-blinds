@@ -110,7 +110,6 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     const startTimestamp = Date.now();
     this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function(err) {
         if (err) {
-            callback(null);
             return;
         }
 
