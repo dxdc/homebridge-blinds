@@ -1,4 +1,4 @@
-let request = require('request');
+let request = require('requestretry');
 let Service, Characteristic, HomebridgeAPI;
 
 module.exports = function(homebridge) {
@@ -28,6 +28,8 @@ function BlindsHTTPAccessory(log, config) {
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
     this.httpMethod = config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
+    this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
+    this.retryDelay = parseInt(config.retry_delay, 10) || 2000;
     this.motionTime = parseInt(config.motion_time, 10) || 10000;
     this.responseLag = parseInt(config.response_lag, 10) || 0;
     this.verbose = config.verbose || false;
@@ -174,7 +176,12 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     }
 
     const options = Object.assign({ url: url }, methods);
-    request(options, function(err, response, body) {
+    request({
+        options,
+        maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
+        retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
+        retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+    }, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             callback(null);
         } else {

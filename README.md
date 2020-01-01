@@ -40,6 +40,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       },
       "trigger_stop_at_boundaries": false,
       "success_codes": [ 200, 204 ],
+      "max_http_attempts": 5,
+      "retry_delay": 2000,
       "verbose": false
     }
 ```
@@ -57,6 +59,10 @@ You can omit `http_method`, it defaults to `POST`. Note that it can be configure
 4. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
 
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
+
+`max_http_attempts` allows you to define a maximum number of retries on a failed or timed out request (retry on 5xx or network errors). If omitted, it defaults to 5. If no retries are desired, set this value to 1.
+
+`retry_delay` allows you to define the number of ms between HTTP retries (`max_http_attempts` > 1). If omitted, it defaults to 2000 (2 seconds). The minimum number of ms has been set to 100 to avoid excessive requests.
 
 `trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
 
