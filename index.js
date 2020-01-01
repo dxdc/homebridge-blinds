@@ -175,13 +175,15 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
         methods = { method: methods };
     }
 
-    const options = Object.assign({ url: url }, methods);
-    request({
-        options,
+    const urlRetries = {
+        url: url,
         maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
         retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
         retryStrategy: request.RetryStrategies.HTTPOrNetworkError
-    }, function(err, response, body) {
+    };
+    const options = Object.assign(urlRetries, methods);
+
+    request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             callback(null);
         } else {
