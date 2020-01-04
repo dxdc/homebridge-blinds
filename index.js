@@ -185,11 +185,17 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
 
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
+            if (response.attempts > 1 || this.verbose) {
+                this.log.info(
+                    `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
+                );
+            }
             callback(null);
         } else {
             this.log.error(
                 `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
             );
+            this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
             this.log.error(`Body: ${body}`);
             callback(err);
         }
