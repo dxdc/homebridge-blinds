@@ -25,6 +25,12 @@
 				"type": "string",
 				"description": "The URL to send the 'STOP' command."
 			},
+			"use_same_url_for_stop": {
+				"title": "Use Same URL for Stop",
+				"type": "boolean",
+				"default": false,
+				"description": "Instead of using the 'STOP' command, just re-send the 'UP' or 'DOWN' command."
+			},
 			"http_method": {
 				"title": "HTTP Parameters",
 				"type": "object",

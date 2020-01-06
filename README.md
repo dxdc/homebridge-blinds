@@ -29,6 +29,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
+      "use_same_url_for_stop": false,
       "motion_time": 10000,
       "response_lag": 0,
       "http_method": {
@@ -48,7 +49,9 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 You can omit any of the `up_url`, `down_url`, etc. if you don't want these to send a command.
 
-You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) supports.
+If `use_same_url_for_stop` is set to true, it will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
+
+You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
 `motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running.
 
@@ -56,7 +59,9 @@ You can omit `http_method`, it defaults to `POST`. Note that it can be configure
 
 1. Send HTTP command to url
 2. Wait `response_lag`; expected finish time (`current_position` - `target_position`) / 100 * `motion_time`
-4. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
+3. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
+
+You can see the amount of time that Step 1 takes by reviewing the logs, i.e., `Move request sent (484 ms)` indicates the HTTP request took 484 ms.
 
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
 

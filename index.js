@@ -26,6 +26,7 @@ function BlindsHTTPAccessory(log, config) {
     this.downURL = config.down_url || false;
     this.stopURL = config.stop_url || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
+    this.useSameUrlForStop = config.use_same_url_for_stop || false;
     this.httpMethod = config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
     this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
@@ -110,7 +111,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     let self = this;
 
     const startTimestamp = Date.now();
-    this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function(err) {
+    const moveUrl = moveUp ? this.upURL : this.downURL;
+    if (this.useSameUrlForStop) {
+        this.stopURL = moveUrl;
+    }
+
+    this.httpRequest(moveUrl, this.httpMethod, function(err) {
         if (err) {
             return;
         }
