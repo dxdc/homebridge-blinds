@@ -248,21 +248,27 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     if (!url) {
-    }
-
-    // backward compatibility
-    if (methods && typeof methods.valueOf() === 'string') {
-        methods = { method: methods };
         return callback(null, null);
     }
 
-    const urlRetries = {
-        url: url,
-        maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
-        retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
-        retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+    const options = function() {
+        if (typeof url.valueOf() === 'string') {
+            // backward compatibility
+            if (methods && typeof methods.valueOf() === 'string') {
+                methods = { method: methods };
+            }
+    
+            const urlRetries = {
+                url: url,
+                maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
+                retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
+                retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+            };
+            return Object.assign(urlRetries, methods);
+        } else {
+            return url;
+        }
     };
-    const options = Object.assign(urlRetries, methods);
 
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
