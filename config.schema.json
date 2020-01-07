@@ -25,6 +25,12 @@
 				"type": "string",
 				"description": "The URL to send the 'STOP' command."
 			},
+			"show_stop_button": {
+				"title": "Show Stop Button",
+				"type": "boolean",
+				"default": false,
+				"description": "Exposes a 'STOP' button within HomeKit."
+			},
 			"use_same_url_for_stop": {
 				"title": "Use Same URL for Stop",
 				"type": "boolean",

@@ -1,3 +1,6 @@
+'use strict';
+const packageJSON = require('./package.json');
+
 let request = require('requestretry');
 let Service, Characteristic, HomebridgeAPI;
 
@@ -25,6 +28,7 @@ function BlindsHTTPAccessory(log, config) {
     this.upURL = config.up_url || false;
     this.downURL = config.down_url || false;
     this.stopURL = config.stop_url || false;
+    this.showStopButton = config.show_stop_button || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
     this.useSameUrlForStop = config.use_same_url_for_stop || false;
     this.httpMethod = config.http_method || { method: 'POST' };
@@ -89,12 +93,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     if (this.stopTimeout != null) clearTimeout(this.stopTimeout);
     if (this.stepInterval != null) clearInterval(this.stepInterval);
 
+    this.manualStop = false;
     this.currentTargetPosition = pos;
     if (this.currentTargetPosition == this.lastPosition) {
         if (this.currentTargetPosition % 100 > 0) {
             this.log(`Already there: ${this.currentTargetPosition}%`);
-            callback(null);
-            return;
+            return callback(null);
         } else {
             this.log(
                 `Already there: ${this.currentTargetPosition}%, re-sending request`
@@ -131,15 +135,11 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
         // Send stop command before target position is reached to account for response_lag
         if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
-            self.log('Stop command will be requested');
+            if (this.verbose) {
+                self.log('Stop command will be requested');
+            }
             this.stopTimeout = setTimeout(function() {
-                self.httpRequest(self.stopURL, self.httpMethod, function(err) {
-                    if (err) {
-                        self.log.warn('Stop request failed');
-                    } else {
-                        self.log('Stop request sent');
-                    }
-                }.bind(self));
+                self.sendStopRequest(null, true);
             }, Math.max(waitDelay, 0));
         }
 
@@ -149,10 +149,16 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                 self.log('Timeout finished');
             }
             self.stepInterval = setInterval(function() {
-                if (self.lastPosition == self.currentTargetPosition) {
+                if (self.manualStop) {
+                    self.currentTargetPosition = self.lastPosition;
+                }
+                if (self.lastPosition < self.currentTargetPosition) {
+                    self.lastPosition += moveUp ? 1 : -1;
+                } else {
                     self.log(
                         `End ${moveMessage} (to ${self.currentTargetPosition}%)`
                     );
+                    
                     self.service
                         .getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
@@ -160,14 +166,44 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                         .getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
                     clearInterval(self.stepInterval);
-                } else {
-                    self.lastPosition += moveUp ? 1 : -1;
                 }
             }, motionTimeStep);
         }, Math.max(this.responseLag, 0));
     }.bind(this));
 
     callback(null);
+};
+
+BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
+    if (on) {
+        if (targetService) {
+            this.log('Requesting manual stop');
+            if (this.stopTimeout != null) clearTimeout(this.stopTimeout);
+        } else {
+            this.log('Requesting stop');
+        }
+
+        this.httpRequest(this.stopURL, this.httpMethod, function(err) {
+            if (err) {
+                this.log.warn('Stop request failed');
+            } else {
+                if (targetService) {
+                    this.manualStop = true;
+                }
+                this.log('Stop request sent');
+            }
+        }.bind(this));
+        
+        if (targetService) {
+            setTimeout(function() {
+                targetService.setCharacteristic(Characteristic.On, false);
+            }.bind(this), 1000);
+        }
+    }
+
+    if (targetService) {
+        return callback(null);
+    }
 };
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
@@ -209,5 +245,27 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
 };
 
 BlindsHTTPAccessory.prototype.getServices = function() {
-    return [this.service];
+    this.services = [];
+
+    const informationService = new Service.AccessoryInformation();
+    informationService
+        .setCharacteristic(Characteristic.Manufacturer, 'homebridge-blinds')
+        .setCharacteristic(Characteristic.Name, this.name)
+        .setCharacteristic(Characteristic.Model, this.name)
+        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory')
+        .setCharacteristic(Characteristic.FirmwareRevision, packageJSON.version);
+
+    this.services.push(informationService);
+    this.services.push(this.service);
+
+    if (this.showStopButton && (this.stopURL || this.useSameUrlForStop)) {
+        const switchService = new Service.Switch(this.name + ' Stop');
+        switchService
+            .getCharacteristic(Characteristic.On)
+            .on('set', this.sendStopRequest.bind(this, switchService));
+
+        this.services.push(switchService);
+    }
+
+    return this.services;
 };

@@ -29,6 +29,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
+      "show_stop_button": false,
       "use_same_url_for_stop": false,
       "motion_time": 10000,
       "response_lag": 0,
@@ -50,6 +51,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 You can omit any of the `up_url`, `down_url`, etc. if you don't want these to send a command.
 
 If `use_same_url_for_stop` is set to true, it will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
+If `show_stop_button` is set to `true`, it will expose a HomeKit button for the stop command. Some logic has also been added to smoothly abort any currently running functions.
+
 
 You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
