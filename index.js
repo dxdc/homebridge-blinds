@@ -54,6 +54,12 @@ function BlindsHTTPAccessory(log, config) {
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
     this.currentTargetPosition = this.lastPosition;
 
+    if (this.positionURL) {
+        this.getCurrentPosition(function() {
+            this.currentTargetPosition = this.lastPosition;
+        });
+    }
+
     // register the service and provide the functions
     this.service = new Service.WindowCovering(this.name);
 
