@@ -183,10 +183,14 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                 if (self.manualStop) {
                     self.currentTargetPosition = self.lastPosition;
                 }
-                if (self.lastPosition < self.currentTargetPosition) {
-                    // TODO: should periodic polling of self.getCurrentPosition be performed if self.positionURL is set?
-                    self.lastPosition += moveUp ? 1 : -1;
+
+                // TODO: should periodic polling of self.getCurrentPosition be performed if self.positionURL is set?
+                if (moveUp && self.lastPosition < self.currentTargetPosition) {
+                    self.lastPosition += 1;
+                } else if (!moveUp && self.lastPosition > self.currentTargetPosition) {
+                    self.lastPosition += -1;
                 } else {
+                    // Reached target
                     self.log(
                         `End ${moveMessage} (to ${self.currentTargetPosition}%)`
                     );
@@ -194,8 +198,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.service
                         .getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
-                    // In case of overshoot
-                    self.currentTargetPosition = self.lastPosition;
+                    
+                    self.currentTargetPosition = self.lastPosition; // In case of overshoot
                     self.service
                         .getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
