@@ -27,6 +27,7 @@ function BlindsHTTPAccessory(log, config) {
     this.name = config.name;
     this.upURL = config.up_url || false;
     this.downURL = config.down_url || false;
+    this.positionURL = config.position_url || false;
     this.stopURL = config.stop_url || false;
     this.showStopButton = config.show_stop_button || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
@@ -56,14 +57,14 @@ function BlindsHTTPAccessory(log, config) {
     // register the service and provide the functions
     this.service = new Service.WindowCovering(this.name);
 
-    // the current position (0-100%)
-    // https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js#L493
+    // the current position (0-100)
+    // https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit.ts#L712
     this.service
         .getCharacteristic(Characteristic.CurrentPosition)
         .on('get', this.getCurrentPosition.bind(this));
 
-    // the target position (0-100%)
-    // https://github.com/KhaosT/HAP-NodeJS/blob/master/lib/gen/HomeKitTypes.js#L1564
+    // the target position (0-100)
+    // https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit.ts#L2781
     this.service
         .getCharacteristic(Characteristic.TargetPosition)
         .on('get', this.getTargetPosition.bind(this))
@@ -78,14 +79,44 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     if (this.verbose) {
         this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
     }
-    callback(null, this.lastPosition);
+
+    if (this.positionURL) {
+        const options = {
+            url: this.positionURL,
+            maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
+            retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
+            retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+        };
+    
+        request(options, function(err, response, body) {
+            if (!err && response && this.successCodes.includes(response.statusCode)) {
+                if (response.attempts > 1 || this.verbose) {
+                    this.log.info(
+                        `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
+                    );
+                }
+
+                const pos = parseInt(body, 10);
+                if (pos >= 0 && pos <= 100) {
+                    this.lastPosition = pos;
+                } else {
+                    this.log.warn(`Invalid position response received (should be 0-100): ${pos}`);
+                }
+            } else {
+                this.log.error(`Error sending CurrentPosition request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
+                this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
+            }
+        }.bind(this));
+    }
+
+    return callback(null, this.lastPosition);
 };
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
     if (this.verbose) {
         this.log(`Requested TargetPosition: ${this.currentTargetPosition}%`);
     }
-    callback(null, this.currentTargetPosition);
+    return callback(null, this.currentTargetPosition);
 };
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
@@ -153,6 +184,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.currentTargetPosition = self.lastPosition;
                 }
                 if (self.lastPosition < self.currentTargetPosition) {
+                    // TODO: should periodic polling of self.getCurrentPosition be performed if self.positionURL is set?
                     self.lastPosition += moveUp ? 1 : -1;
                 } else {
                     self.log(
@@ -162,6 +194,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.service
                         .getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
+                    // In case of overshoot
+                    self.currentTargetPosition = self.lastPosition;
                     self.service
                         .getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
@@ -171,7 +205,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         }, Math.max(this.responseLag, 0));
     }.bind(this));
 
-    callback(null);
+    return callback(null);
 };
 
 BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
@@ -208,8 +242,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     if (!url) {
-        callback(null);
-        return;
+        return callback(null);
     }
 
     // backward compatibility
@@ -232,14 +265,14 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
                     `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
                 );
             }
-            callback(null);
+            return callback(null);
         } else {
             this.log.error(
                 `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
             );
             this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
             this.log.error(`Body: ${body}`);
-            callback(err);
+            return callback(err);
         }
     }.bind(this));
 };

@@ -13,12 +13,17 @@
 			"up_url": {
 				"title": "Up URL",
 				"type": "string",
-				"description": "The URL to send the 'UP' command"
+				"description": "The URL to send the 'UP' command."
 			},
 			"down_url": {
 				"title": "Down URL",
 				"type": "string",
 				"description": "The URL to send the 'DOWN' command."
+			},
+			"position_url": {
+				"title": "Position URL",
+				"type": "string",
+				"description": "The URL to get the current blinds position (must be 0-100 response)."
 			},
 			"stop_url": {
 				"title": "Stop URL",
