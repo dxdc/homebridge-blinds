@@ -196,11 +196,11 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.log(
                         `End ${moveMessage} (to ${self.currentTargetPosition}%)`
                     );
-                    
+
                     self.service
                         .getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
-                    
+
                     self.currentTargetPosition = self.lastPosition; // In case of overshoot
                     self.service
                         .getCharacteristic(Characteristic.PositionState)
@@ -233,7 +233,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
                 this.log('Stop request sent');
             }
         }.bind(this));
-        
+
         if (targetService) {
             setTimeout(function() {
                 targetService.setCharacteristic(Characteristic.On, false);
@@ -257,7 +257,7 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
             if (methods && typeof methods.valueOf() === 'string') {
                 methods = { method: methods };
             }
-    
+
             const urlRetries = {
                 url: url,
                 maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
@@ -268,9 +268,9 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
         } else {
             return url;
         }
-    };
+    }.bind(this);
 
-    request(options, function(err, response, body) {
+    request(options(), function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             if (response.attempts > 1 || this.verbose) {
                 this.log.info(
