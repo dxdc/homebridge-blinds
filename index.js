@@ -81,35 +81,31 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     }
 
     if (this.positionURL) {
-        const options = {
-            url: this.positionURL,
-            maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
-            retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
-            retryStrategy: request.RetryStrategies.HTTPOrNetworkError
-        };
-    
-        request(options, function(err, response, body) {
-            if (!err && response && this.successCodes.includes(response.statusCode)) {
-                if (response.attempts > 1 || this.verbose) {
-                    this.log.info(
-                        `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
-                    );
-                }
-
-                const pos = parseInt(body, 10);
-                if (pos >= 0 && pos <= 100) {
-                    this.lastPosition = pos;
-                } else {
-                    this.log.warn(`Invalid position response received (should be 0-100): ${pos}`);
-                }
-            } else {
-                this.log.error(`Error sending CurrentPosition request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`);
-                this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
+        this.setCurrentPositionByUrl(function(err) {
+            if (err) {
+                this.log.error(`setCurrentPositionByUrl failed; invalid response (should be 0-100): ${err}`);
             }
-        }.bind(this));
+            return callback(null, this.lastPosition);
+        });
+    } else {
+        return callback(null, this.lastPosition);
     }
+};
 
-    return callback(null, this.lastPosition);
+BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
+    this.httpRequest(this.positionURL, { method: 'GET' }, function(body, err) {
+        if (err || !body) {
+            return callback('(missing or error)');
+        }
+
+        const pos = parseInt(body, 10);
+        if (pos < 0 || pos > 100) { // invalid
+            return callback(pos);
+        }
+
+        this.lastPosition = pos;
+        return callback(null);
+    }.bind(this));
 };
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
@@ -151,7 +147,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         this.stopURL = moveUrl;
     }
 
-    this.httpRequest(moveUrl, this.httpMethod, function(err) {
+    this.httpRequest(moveUrl, this.httpMethod, function(body, err) {
         if (err) {
             return;
         }
@@ -221,7 +217,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
             this.log('Requesting stop');
         }
 
-        this.httpRequest(this.stopURL, this.httpMethod, function(err) {
+        this.httpRequest(this.stopURL, this.httpMethod, function(body, err) {
             if (err) {
                 this.log.warn('Stop request failed');
             } else {
@@ -246,12 +242,12 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     if (!url) {
-        return callback(null);
     }
 
     // backward compatibility
     if (methods && typeof methods.valueOf() === 'string') {
         methods = { method: methods };
+        return callback(null, null);
     }
 
     const urlRetries = {
@@ -269,14 +265,16 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
                     `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
                 );
             }
-            return callback(null);
+
+            return callback(body, null);
         } else {
             this.log.error(
                 `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
             );
             this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
             this.log.error(`Body: ${body}`);
-            return callback(err);
+
+            return callback(body, err);
         }
     }.bind(this));
 };
