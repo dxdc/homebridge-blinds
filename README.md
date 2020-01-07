@@ -53,7 +53,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 You can omit any of the `up_url`, `down_url`, `stop_url`, `position_url` if you don't want these to send a command.
 
-`position_url` is optional, but must report the current state of the blinds as an integer (0-100) and via a simple GET request. Headers or other methods specified in `http_method` are ignored. For more advanced configuration, see below.
+`position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Headers or other methods specified in `http_method` are ignored. For more advanced configuration, see below.
 
 You can omit `http_method`, it defaults to `POST`. Note that it can also be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
@@ -65,7 +65,7 @@ You can omit `http_method`, it defaults to `POST`. Note that it can also be conf
 
 ### Advanced URL Configuration
 
-Alternatively, for more advanced configuration of URL's, each URL can be set to a complete request/requestretry objects, e.g.:
+Alternatively, for more advanced configuration of URL's, each URL can be set to a complete request/requestretry object, e.g.:
 
 ```js
       "up_url": {
@@ -80,7 +80,7 @@ Alternatively, for more advanced configuration of URL's, each URL can be set to 
       },
 ```
 
-If an object is used for the configuration, `http_method`, `max_http_attempts`, and `retry_delay` are ignored, and must be instead specified directly inside the object. `success_codes` are still used globally.
+If an object is used for the configuration, `http_method`, `max_http_attempts`, and `retry_delay` are ignored, and these values must be instead specified directly inside the object. `success_codes` are still used globally.
 
 ### Remaining Parameters
 
@@ -88,7 +88,7 @@ If `use_same_url_for_stop` is set to `true`, it will send the previously sent ur
 
 If `show_stop_button` is set to `true`, it will expose a HomeKit button for the stop command. Some logic has also been added to smoothly abort any currently running functions.
 
-`motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running. **NOTE**: If you have triggering blinds simultaneously and are getting network timeouts due to your configuration, try using non-identical `motion_time`, e.g., 9800, 10000, 10200 instead of 10000 for each, it may help.
+`motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running. **NOTE**: If you are performing multiple blind requests simultaneously and are getting network timeouts due to your configuration, try using non-identical `motion_time` (e.g., 9800, 10000, 10200 vs. 10000 for each) it may help.
 
 `response_lag` is an optional parameter used to improve the calculation for setting a specific blinds position. It takes into account the delay of the device you are using control the blinds (RF transmitter or otherwise). This is useful since it will do a better job of not under/overshooting the target:
 
@@ -126,8 +126,6 @@ These values can be obtained from the Bond app, under `Device settings` for any 
       "up_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Open",
       "down_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Close", 
       "stop_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Hold", 
-      "motion_time": 11000, 
-      "response_lag": 1000, 
       "http_method": {
         "body": "{}", 
         "headers": {
@@ -136,6 +134,8 @@ These values can be obtained from the Bond app, under `Device settings` for any 
         "method": "PUT"
       }, 
       "success_codes": [ 204 ], 
+      "motion_time": 11000, 
+      "response_lag": 1000, 
       "trigger_stop_at_boundaries": false, 
     }
 ```
