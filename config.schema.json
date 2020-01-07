@@ -29,6 +29,11 @@
 				"title": "Position URL",
 				"type": "string",
 				"description": "The URL to get the current blinds position (must be 0-100 response)."
+			"use_same_url_for_stop": {
+				"title": "Use Same URL for Stop",
+				"type": "boolean",
+				"default": false,
+				"description": "Instead of using the 'STOP' command, just re-send the 'UP' or 'DOWN' command."
 			},
 			"http_method": {
 				"title": "HTTP Parameters",
@@ -61,6 +66,18 @@
 				"type": "array",
 				"default": [200],
 				"description": "Array of response codes that are interpreted as a successful reply."
+			},
+			"max_http_attempts": {
+				"title": "Maximum HTTP attempts",
+				"type": "number",
+				"default": 5,
+				"description": "Maximum number of HTTP attempts (on error or timeout) per request."
+			},
+			"retry_delay": {
+				"title": "Maximum HTTP attempts",
+				"type": "number",
+				"default": 2000,
+				"description": "Time (in ms) between HTTP attempts."
 			},
 			"verbose": {
 				"title": "Verbose logging",

@@ -30,6 +30,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
       "position_url": "http://1.2.3.4/position",
+      "use_same_url_for_stop": false,
       "motion_time": 10000,
       "response_lag": 0,
       "http_method": {
@@ -41,6 +42,8 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       },
       "trigger_stop_at_boundaries": false,
       "success_codes": [ 200, 204 ],
+      "max_http_attempts": 5,
+      "retry_delay": 2000,
       "verbose": false
     }
 ```
@@ -50,6 +53,9 @@ You can omit any of the `up_url`, `down_url`, etc. if you don't want these to se
 `position_url` is optional, but must report the current state of the blinds as an integer (0-100) and via GET. Headers or other methods specified in `http_method` are ignored.
 
 You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) supports.
+If `use_same_url_for_stop` is set to true, it will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
+
+You can omit `http_method`, it defaults to `POST`. Note that it can be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
 `motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running.
 
@@ -57,9 +63,15 @@ You can omit `http_method`, it defaults to `POST`. Note that it can be configure
 
 1. Send HTTP command to url
 2. Wait `response_lag`; expected finish time (`current_position` - `target_position`) / 100 * `motion_time`
-4. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
+3. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
+
+You can see the amount of time that Step 1 takes by reviewing the logs, i.e., `Move request sent (484 ms)` indicates the HTTP request took 484 ms.
 
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
+
+`max_http_attempts` allows you to define a maximum number of retries on a failed or timed out request (retry on 5xx or network errors). If omitted, it defaults to 5. If no retries are desired, set this value to 1.
+
+`retry_delay` allows you to define the number of ms between HTTP retries (`max_http_attempts` > 1). If omitted, it defaults to 2000 (2 seconds). The minimum number of ms has been set to 100 to avoid excessive requests.
 
 `trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
 

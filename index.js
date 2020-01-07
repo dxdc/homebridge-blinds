@@ -1,4 +1,4 @@
-let request = require('request');
+let request = require('requestretry');
 let Service, Characteristic, HomebridgeAPI;
 
 module.exports = function(homebridge) {
@@ -27,8 +27,11 @@ function BlindsHTTPAccessory(log, config) {
     this.stopURL = config.stop_url || false;
     this.positionURL = config.position_url || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
+    this.useSameUrlForStop = config.use_same_url_for_stop || false;
     this.httpMethod = config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
+    this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
+    this.retryDelay = parseInt(config.retry_delay, 10) || 2000;
     this.motionTime = parseInt(config.motion_time, 10) || 10000;
     this.responseLag = parseInt(config.response_lag, 10) || 0;
     this.verbose = config.verbose || false;
@@ -117,16 +120,20 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
     const moveUp =
         this.currentTargetPosition > this.lastPosition ||
-        this.currentTargetPosition == 1;
+        this.currentTargetPosition == 100;
     const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
     this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
     let self = this;
 
     const startTimestamp = Date.now();
-    this.httpRequest((moveUp ? this.upURL : this.downURL), this.httpMethod, function(err) {
+    const moveUrl = moveUp ? this.upURL : this.downURL;
+    if (this.useSameUrlForStop) {
+        this.stopURL = moveUrl;
+    }
+
+    this.httpRequest(moveUrl, this.httpMethod, function(err) {
         if (err) {
-            callback(null);
             return;
         }
 
@@ -140,6 +147,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
         // Send stop command before target position is reached to account for response_lag
         if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
+            self.log('Stop command will be requested');
             this.stopTimeout = setTimeout(function() {
                 self.httpRequest(self.stopURL, self.httpMethod, function(err) {
                     if (err) {
@@ -180,21 +188,37 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 };
 
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
-    if (!url) callback(null);
+    if (!url) {
+        callback(null);
+        return;
+    }
 
     // backward compatibility
     if (methods && typeof methods.valueOf() === 'string') {
         methods = { method: methods };
     }
 
-    const options = Object.assign({ url: url }, methods);
+    const urlRetries = {
+        url: url,
+        maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
+        retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
+        retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+    };
+    const options = Object.assign(urlRetries, methods);
+
     request(options, function(err, response, body) {
         if (!err && response && this.successCodes.includes(response.statusCode)) {
+            if (response.attempts > 1 || this.verbose) {
+                this.log.info(
+                    `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
+                );
+            }
             callback(null);
         } else {
             this.log.error(
                 `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
             );
+            this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
             this.log.error(`Body: ${body}`);
             callback(err);
         }
