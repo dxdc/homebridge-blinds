@@ -82,27 +82,51 @@ Alternatively, for more advanced configuration of URL's, each URL can be set to 
 
 If an object is used for the configuration, `http_method`, `max_http_attempts`, and `retry_delay` are ignored, and these values must be instead specified directly inside the object. `success_codes` are still used globally.
 
-### Remaining Parameters
+### Motion Time and Calibration
 
-If `use_same_url_for_stop` is set to `true`, it will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
+`motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running. Filming this with your phone to determine the time may be easier than trying to do it with a timer. **NOTE**: If you are performing multiple blind requests simultaneously and are getting network timeouts due to your configuration, try using non-identical `motion_time` (e.g., 9800, 10000, 10200 vs. 10000 for each) it may help.
+
+**Steps:**
+1. HTTP UP/DOWN request sent; wait for successful reply (i.e., `success_codes`) = `HTTP request delay (measured)`
+2. Wait for device to send the signal to blinds, and movement begins = `response_lag`
+3. Total motion time = `current_position` - `target_position`) / 100 * `motion_time`
+4. Send stop request (if needed) = `Total motion time` - `HTTP request delay` - `response_lag`
+5. Wait for blinds to reach the target position = `Total motion time`
+
+- The HTTP request delay is in the logs, i.e., `Move request sent (484 ms)` indicates the HTTP request took 484 ms.
+
+- Using `response_lag` also helps ensure that if a move event is interrupted early, the position of the blinds will still be correct.
+
+- Because the `HTTP request delay` in Step 1 can vary significantly (e.g., in the event of a failed request, it could be a few seconds), it is not included in the equation for Step 4. This is also shown in the Example below.
+
+- The optional stop request needs to be sent *before* the blinds will actually reach the target position. This is because there is a delay (i.e., Steps 1 and 2) before a request is sent, received, and the corresponding signal sent.
+
+Therefore, to calibrate your blinds, you will need to set `response_lag`. This can be a second or more in some cases. The simplest way to do this is to determine the time from initiating an open/close event via HomeKit to the time you can see/hear movement, and subtract the `HTTP request delay` (from the logs). This is only relevant when `trigger_stop_at_boundaries` is required, or, a value of 1-99 is used for the blinds (not just fully open or closed).
+
+##### Example scenario (`motion_time` = 10000, `response_lag` = 750):
+
+- 0.00 `Open` command sent
+- 0.25 `HTTP request` successful (`Move request sent (250 ms)`)
+- 1.00 Blinds moving...
+- 10.25 `Stop` request sent
+- 10.50 (est.) `HTTP request` successful
+- 11.00 (Blinds should have stopped moving here, but `HTTP request delay` was ignored as mentioned above)
+- 11.25 `Stop` command received by blinds, blinds stopped moving
+
+### Remaining Parameters
 
 If `show_stop_button` is set to `true`, it will expose a HomeKit button for the stop command. Some logic has also been added to smoothly abort any currently running functions.
 
-`motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running. **NOTE**: If you are performing multiple blind requests simultaneously and are getting network timeouts due to your configuration, try using non-identical `motion_time` (e.g., 9800, 10000, 10200 vs. 10000 for each) it may help.
-
-`response_lag` is an optional parameter used to improve the calculation for setting a specific blinds position. It takes into account the delay of the device you are using control the blinds (RF transmitter or otherwise). This is useful since it will do a better job of not under/overshooting the target:
-
-1. Send HTTP command to url
-2. Wait `response_lag`; expected finish time (`current_position` - `target_position`) / 100 * `motion_time`
-3. Send stop command at (`current_position` - `target_position`) / 100 * `motion_time` - `response_lag`
-
-You can see the amount of time that Step 1 takes by reviewing the logs, i.e., `Move request sent (484 ms)` indicates the HTTP request took 484 ms.
-
-`trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themself, for such blinds it is advised to set this to `false`.
-
 `verbose` is optional and adds additional logging capabilities
 
+### Parameters for Special Cases
+
+If `use_same_url_for_stop` is set to `true`, it will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
+
+`trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themselves, for such blinds it is advised to set this to `false`.
+
 ## Note
+
 Currently the plugin only emulates the position (it saves it in a variable), but it can be used with `position_url` for realtime feedback.
 
 Feel free to contribute to make this a better plugin!
