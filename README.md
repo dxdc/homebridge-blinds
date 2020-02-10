@@ -42,6 +42,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "retry_delay": 2000,
       "use_same_url_for_stop": false,
       "show_stop_button": false,
+      "show_toggle_button": false,
       "motion_time": 10000,
       "response_lag": 0,
       "trigger_stop_at_boundaries": false,
@@ -116,6 +117,8 @@ Therefore, to calibrate your blinds, you will need to set `response_lag`. This c
 ### Remaining Parameters
 
 If `show_stop_button` is set to `true`, it will expose a HomeKit button for the stop command. Some logic has also been added to smoothly abort any currently running functions.
+
+If `show_toggle_button` is set to `true`, it will expose a HomeKit button that will allow the blinds position to be toggled based on the last command sent. For example, if the last command sent to the blinds was `up`, it will send the command `down`. Note that on start up, `toggle` will have no effect until at least one command (`up` or `down` is sent).
 
 `verbose` is optional and adds additional logging capabilities
 

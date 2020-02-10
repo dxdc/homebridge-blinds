@@ -30,6 +30,7 @@ function BlindsHTTPAccessory(log, config) {
     this.positionURL = config.position_url || false;
     this.stopURL = config.stop_url || false;
     this.showStopButton = config.show_stop_button || false;
+    this.showToggleButton = config.show_toggle_button || false;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
     this.useSameUrlForStop = config.use_same_url_for_stop || false;
     this.httpMethod = config.http_method || { method: 'POST' };
@@ -52,6 +53,7 @@ function BlindsHTTPAccessory(log, config) {
     this.lagTimeout = null;
     this.stepInterval = null;
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
+    this.lastCommandMoveUp = null;
     this.currentTargetPosition = this.lastPosition;
 
     if (this.positionURL) {
@@ -157,6 +159,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         if (err) {
             return;
         }
+        
+        this.lastCommandMoveUp = moveUp;
 
         this.storage.setItemSync(this.name, this.currentTargetPosition);
         const motionTimeStep = this.motionTime / 100;
@@ -246,6 +250,29 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
     }
 };
 
+BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, callback) {
+    if (on) {
+        if (targetService) {
+            this.log('Requesting toggle');
+            if (this.lastCommandMoveUp !== null) {
+                this.setTargetPosition(this.lastCommandMoveUp ? 0 : 100, function(err) {
+                    this.log('Toggle complete');
+                });
+            } else {
+                this.log('No previously known state; toggle skipped');
+            }
+
+            setTimeout(function() {
+                targetService.setCharacteristic(Characteristic.On, false);
+            }.bind(this), 1000);
+        }
+    }
+
+    if (targetService) {
+        return callback(null);
+    }
+};
+
 BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
     if (!url) {
         return callback(null, null);
@@ -306,12 +333,21 @@ BlindsHTTPAccessory.prototype.getServices = function() {
     this.services.push(this.service);
 
     if (this.showStopButton && (this.stopURL || this.useSameUrlForStop)) {
-        const switchService = new Service.Switch(this.name + ' Stop');
-        switchService
+        const stopService = new Service.Switch(this.name + ' Stop');
+        stopService
             .getCharacteristic(Characteristic.On)
-            .on('set', this.sendStopRequest.bind(this, switchService));
+            .on('set', this.sendStopRequest.bind(this, stopService));
 
-        this.services.push(switchService);
+        this.services.push(stopService);
+    }
+
+    if (this.showToggleButton) {
+        const toggleService = new Service.Switch(this.name + ' Toggle');
+        toggleService
+            .getCharacteristic(Characteristic.On)
+            .on('set', this.sendToggleRequest.bind(this, toggleService));
+
+        this.services.push(toggleService);
     }
 
     return this.services;

@@ -30,17 +30,23 @@
 				"type": "string",
 				"description": "The URL to send the 'STOP' command."
 			},
+			"use_same_url_for_stop": {
+				"title": "Use Same URL for Stop",
+				"type": "boolean",
+				"default": false,
+				"description": "Instead of using the 'STOP' command, just re-send the 'UP' or 'DOWN' command."
+			},
 			"show_stop_button": {
 				"title": "Show Stop Button",
 				"type": "boolean",
 				"default": false,
 				"description": "Exposes a 'STOP' button within HomeKit."
 			},
-			"use_same_url_for_stop": {
-				"title": "Use Same URL for Stop",
+			"show_toggle_button": {
+				"title": "Show Toggle Button",
 				"type": "boolean",
 				"default": false,
-				"description": "Instead of using the 'STOP' command, just re-send the 'UP' or 'DOWN' command."
+				"description": "Exposes a 'TOGGLE' button within HomeKit."
 			},
 			"http_method": {
 				"title": "HTTP Parameters",
