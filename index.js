@@ -138,7 +138,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     if (this.currentTargetPosition == this.lastPosition) {
         if (this.currentTargetPosition % 100 > 0) {
             this.log(`Already there: ${this.currentTargetPosition}%`);
-            return (callback) ? callback(null) : null;
+            return callback(null);
         } else {
             this.log(
                 `Already there: ${this.currentTargetPosition}%, re-sending request`
@@ -226,7 +226,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         }, Math.max(this.responseLag, 0));
     }.bind(this));
 
-    return (callback) ? callback(null) : null;
+    return callback(null);
 };
 
 BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
@@ -266,7 +266,8 @@ BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, ca
         if (targetService) {
             this.log('Requesting toggle');
             if (this.lastCommandMoveUp !== null) {
-                this.setTargetPosition(this.lastCommandMoveUp ? 0 : 100, null);
+                this.service
+                    .setCharacteristic(Characteristic.TargetPosition, this.lastCommandMoveUp ? 0 : 100);
             } else {
                 this.log('No previously saved command, toggle skipped. Send an up / down request to establish state and enable toggle functionality.');
             }
