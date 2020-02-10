@@ -111,6 +111,13 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
             return callback('(missing or error)');
         }
 
+        try {
+            // TODO: add more robust handling for JSON
+            const json = JSON.parse(body);
+            body = Object.values(json)[0];
+        } catch (err) {
+        }
+
         const pos = parseInt(body, 10);
         if (pos < 0 || pos > 100) { // invalid
             return callback(pos);
@@ -160,7 +167,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         this.stopURL = moveUrl;
     }
 
-    this.httpRequest(moveUrl, this.httpMethod, function(body, err) {
+    this.httpRequest(moveUrl.replace(/%%POS%%/, this.currentTargetPosition), this.httpMethod, function(body, err) {
         if (err) {
             return;
         }
