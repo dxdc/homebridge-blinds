@@ -53,12 +53,17 @@ function BlindsHTTPAccessory(log, config) {
     this.lagTimeout = null;
     this.stepInterval = null;
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
-    this.lastCommandMoveUp = null;
     this.currentTargetPosition = this.lastPosition;
+    
+    // track last command for toggleService; assume known command if position is 0 or 100 otherwise null
+    this.lastCommandMoveUp = (this.currentTargetPosition % 100 > 0) ? null : (this.currentTargetPosition === 100);
 
     if (this.positionURL) {
         this.getCurrentPosition(function() {
             this.currentTargetPosition = this.lastPosition;
+            if (this.currentTargetPosition % 100 === 0) {
+                this.lastCommandMoveUp = (this.currentTargetPosition === 100);
+            }
         });
     }
 
@@ -133,7 +138,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     if (this.currentTargetPosition == this.lastPosition) {
         if (this.currentTargetPosition % 100 > 0) {
             this.log(`Already there: ${this.currentTargetPosition}%`);
-            return callback(null);
+            return (callback) ? callback(null) : null;
         } else {
             this.log(
                 `Already there: ${this.currentTargetPosition}%, re-sending request`
@@ -159,7 +164,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         if (err) {
             return;
         }
-        
+
         this.lastCommandMoveUp = moveUp;
 
         this.storage.setItemSync(this.name, this.currentTargetPosition);
@@ -215,7 +220,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         }, Math.max(this.responseLag, 0));
     }.bind(this));
 
-    return callback(null);
+    return (callback) ? callback(null) : null;
 };
 
 BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
@@ -255,11 +260,9 @@ BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, ca
         if (targetService) {
             this.log('Requesting toggle');
             if (this.lastCommandMoveUp !== null) {
-                this.setTargetPosition(this.lastCommandMoveUp ? 0 : 100, function(err) {
-                    this.log('Toggle complete');
-                });
+                this.setTargetPosition(this.lastCommandMoveUp ? 0 : 100, null);
             } else {
-                this.log('No previously known state; toggle skipped');
+                this.log('No previously saved command, toggle skipped. Send an up / down request to establish state and enable toggle functionality.');
             }
 
             setTimeout(function() {
