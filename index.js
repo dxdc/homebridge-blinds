@@ -336,7 +336,7 @@ BlindsHTTPAccessory.prototype.getServices = function() {
     this.services.push(this.service);
 
     if (this.showStopButton && (this.stopURL || this.useSameUrlForStop)) {
-        const stopService = new Service.Switch(this.name + ' Stop');
+        const stopService = new Service.Switch(this.name + ' Stop', 'stop');
         stopService
             .getCharacteristic(Characteristic.On)
             .on('set', this.sendStopRequest.bind(this, stopService));
@@ -345,7 +345,7 @@ BlindsHTTPAccessory.prototype.getServices = function() {
     }
 
     if (this.showToggleButton) {
-        const toggleService = new Service.Switch(this.name + ' Toggle');
+        const toggleService = new Service.Switch(this.name + ' Toggle', 'toggle');
         toggleService
             .getCharacteristic(Characteristic.On)
             .on('set', this.sendToggleRequest.bind(this, toggleService));
