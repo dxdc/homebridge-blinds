@@ -54,7 +54,7 @@ function BlindsHTTPAccessory(log, config) {
     this.stepInterval = null;
     this.lastPosition = this.storage.getItemSync(this.name) || 0; // last known position of the blinds, down by default
     this.currentTargetPosition = this.lastPosition;
-    
+
     // track last command for toggleService; assume known command if position is 0 or 100 otherwise null
     this.lastCommandMoveUp = (this.currentTargetPosition % 100 > 0) ? null : (this.currentTargetPosition === 100);
 
@@ -210,10 +210,16 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                         .getCharacteristic(Characteristic.CurrentPosition)
                         .updateValue(self.lastPosition);
 
+                    self.service
+                        .getCharacteristic(Characteristic.TargetPosition)
+                        .updateValue(self.lastPosition);
+
                     self.currentTargetPosition = self.lastPosition; // In case of overshoot
+
                     self.service
                         .getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
+
                     clearInterval(self.stepInterval);
                 }
             }, motionTimeStep);
@@ -245,7 +251,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
 
         if (targetService) {
             setTimeout(function() {
-                targetService.setCharacteristic(Characteristic.On, false);
+                targetService.getCharacteristic(Characteristic.On).updateValue(false);
             }.bind(this), 1000);
         }
     }
@@ -266,7 +272,7 @@ BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, ca
             }
 
             setTimeout(function() {
-                targetService.setCharacteristic(Characteristic.On, false);
+                targetService.getCharacteristic(Characteristic.On).updateValue(false);
             }.bind(this), 1000);
         }
     }
