@@ -99,7 +99,7 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
                 this.log.error(`setCurrentPositionByUrl failed; invalid response (should be 0-100): ${err}`);
             }
             return callback(null, this.lastPosition);
-        });
+        }.bind(this));
     } else {
         return callback(null, this.lastPosition);
     }
