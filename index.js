@@ -168,7 +168,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         this.stopURL = moveUrl;
     }
 
-    this.httpRequest(moveUrl.replace(/%%POS%%/, this.currentTargetPosition), this.httpMethod, function(body, err) {
+    this.httpRequest(moveUrl.replace(/%%POS%%/g, this.currentTargetPosition), this.httpMethod, function(body, err) {
         if (err) {
             return;
         }
