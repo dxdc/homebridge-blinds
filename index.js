@@ -202,6 +202,10 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             let targetReached = false;
 
             self.stepInterval = setInterval(function() {
+                if (targetReached) {
+                    return; // avoid duplicate calls
+                }
+
                 if (self.manualStop) {
                     self.currentTargetPosition = self.lastPosition;
                 }
@@ -213,12 +217,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.lastPosition += -1;
                 } else {
                     // Reached target
-
-                    if (targetReached) {
-                        return; // avoid duplicate calls
-                    }
                     targetReached = true;
-
                     clearInterval(self.stepInterval);
 
                     self.log(
