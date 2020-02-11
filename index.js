@@ -47,6 +47,7 @@ function BlindsHTTPAccessory(log, config) {
         dir: this.cacheDirectory,
         forgiveParseErrors: true
     });
+    this.exactPosRegex = RegExp('%%POS%%', 'g');
 
     // state vars
     this.stopTimeout = null;
@@ -90,7 +91,7 @@ function BlindsHTTPAccessory(log, config) {
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     if (this.verbose) {
-        this.log(`Requested CurrentPosition: ${this.lastPosition}%`);
+        this.log.info(`Requested CurrentPosition: ${this.lastPosition}%`);
     }
 
     if (this.positionURL) {
@@ -131,7 +132,7 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
     if (this.verbose) {
-        this.log(`Requested TargetPosition: ${this.currentTargetPosition}%`);
+        this.log.info(`Requested TargetPosition: ${this.currentTargetPosition}%`);
     }
     return callback(null, this.currentTargetPosition);
 };
@@ -145,10 +146,10 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     this.currentTargetPosition = pos;
     if (this.currentTargetPosition == this.lastPosition) {
         if (this.currentTargetPosition % 100 > 0) {
-            this.log(`Already there: ${this.currentTargetPosition}%`);
+            this.log.info(`Already there: ${this.currentTargetPosition}%`);
             return callback(null);
         } else {
-            this.log(
+            this.log.info(
                 `Already there: ${this.currentTargetPosition}%, re-sending request`
             );
         }
@@ -158,7 +159,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         this.currentTargetPosition > this.lastPosition ||
         this.currentTargetPosition == 100;
     const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
-    this.log(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
+    this.log.info(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
     let self = this;
 
@@ -179,7 +180,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         const motionTimeStep = this.motionTime / 100;
         const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
-        this.log(
+        this.log.info(
             `Move request sent (${Date.now() - startTimestamp} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
         );
 
@@ -196,7 +197,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         // Delay for response lag, then track movement of blinds
         this.lagTimeout = setTimeout(function() {
             if (self.verbose) {
-                self.log('Timeout finished');
+                self.log.info('Timeout finished');
             }
 
             let targetReached = false;
@@ -248,10 +249,10 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
     if (on) {
         if (targetService) {
-            this.log('Requesting manual stop');
+            this.log.info('Requesting manual stop');
             if (this.stopTimeout != null) clearTimeout(this.stopTimeout);
         } else {
-            this.log('Requesting stop');
+            this.log.info('Requesting stop');
         }
 
         this.httpRequest(this.stopURL, this.httpMethod, function(body, err) {
@@ -261,7 +262,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
                 if (targetService) {
                     this.manualStop = true;
                 }
-                this.log('Stop request sent');
+                this.log.info('Stop request sent');
             }
         }.bind(this));
 
@@ -280,12 +281,12 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
 BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, callback) {
     if (on) {
         if (targetService) {
-            this.log('Requesting toggle');
+            this.log.info('Requesting toggle');
             if (this.lastCommandMoveUp !== null) {
                 this.service
                     .setCharacteristic(Characteristic.TargetPosition, this.lastCommandMoveUp ? 0 : 100);
             } else {
-                this.log('No previously saved command, toggle skipped. Send an up / down request to establish state and enable toggle functionality.');
+                this.log.warn('No previously saved command, toggle skipped. Send an up / down request to establish state and enable toggle functionality.');
             }
 
             setTimeout(function() {
@@ -329,6 +330,10 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
                 this.log.info(
                     `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
                 );
+            }
+
+            if (this.verbose) {
+                this.log.info(`Body (${response ? response.statusCode : 'not defined'}): ${body}`);
             }
 
             return callback(body, null);
