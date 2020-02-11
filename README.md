@@ -54,7 +54,9 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 You can omit any of the `up_url`, `down_url`, `stop_url`, `position_url` if you don't want these to send a command.
 
-`position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Headers or other methods specified in `http_method` are ignored. For more advanced configuration, see below.
+For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, which will be replaced with the desired target before the URL is requested. For example, use of "http://1.2.3.4/window/up?pos=%%POS%%" would be modified to "http://1.2.3.4/window/up?pos=100" if the position 100 was requested. This is useful for cases where blinds offer the ability to directly specify the value.
+
+`position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Optionally, this can also be reported as a single JSON value, e.g. `{"current_position": 40}`, although JSON handling is not very robust and will cause unexpected results if different formats are used. Headers or other methods specified in `http_method` are ignored. For more advanced configuration, see below.
 
 You can omit `http_method`, it defaults to `POST`. Note that it can also be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 

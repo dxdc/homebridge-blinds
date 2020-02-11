@@ -116,6 +116,7 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
             const json = JSON.parse(body);
             body = Object.values(json)[0];
         } catch (err) {
+            // failed JSON parsing
         }
 
         const pos = parseInt(body, 10);
