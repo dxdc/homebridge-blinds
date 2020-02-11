@@ -137,9 +137,9 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
 };
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
-    if (this.lagTimeout != null) clearTimeout(this.lagTimeout);
     if (this.stopTimeout != null) clearTimeout(this.stopTimeout);
     if (this.stepInterval != null) clearInterval(this.stepInterval);
+    if (this.lagTimeout != null) clearTimeout(this.lagTimeout);
 
     this.manualStop = false;
     this.currentTargetPosition = pos;
@@ -198,6 +198,9 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             if (self.verbose) {
                 self.log('Timeout finished');
             }
+
+            let targetReached = false;
+
             self.stepInterval = setInterval(function() {
                 if (self.manualStop) {
                     self.currentTargetPosition = self.lastPosition;
@@ -210,6 +213,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.lastPosition += -1;
                 } else {
                     // Reached target
+
+                    if (targetReached) {
+                        return; // avoid duplicate calls
+                    }
+                    targetReached = true;
+
                     clearInterval(self.stepInterval);
 
                     self.log(
