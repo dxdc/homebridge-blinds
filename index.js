@@ -64,7 +64,7 @@ function BlindsHTTPAccessory(log, config) {
             if (this.currentTargetPosition % 100 === 0) {
                 this.lastCommandMoveUp = (this.currentTargetPosition === 100);
             }
-        });
+        }.bind(this));
     }
 
     // register the service and provide the functions
