@@ -168,11 +168,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
     const startTimestamp = Date.now();
     const moveUrl = moveUp ? this.upURL : this.downURL;
+    const useExactPosition = this.exactPosRegex.test(moveUrl);
+
     if (this.useSameUrlForStop) {
         this.stopURL = moveUrl;
     }
 
-    this.httpRequest(moveUrl.replace(/%%POS%%/g, this.currentTargetPosition), this.httpMethod, function(body, err) {
     this.service
         .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
 
@@ -180,6 +181,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         .getCharacteristic(Characteristic.PositionState)
         .updateValue(moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING);
 
+    this.httpRequest(useExactPosition ? moveUrl.replace(this.exactPosRegex, this.currentTargetPosition) : moveUrl, this.httpMethod, function(body, err) {
         if (err) {
             this.service
                 .getCharacteristic(Characteristic.PositionState)
@@ -202,9 +204,13 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         );
 
         // Send stop command before target position is reached to account for response_lag
-        if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
+        if (useExactPosition) {
             if (this.verbose) {
-                self.log('Stop command will be requested');
+                self.log.info('Stop command will be skipped; exact position specified');
+            }
+        } else if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
+            if (this.verbose) {
+                self.log.info('Stop command will be requested');
             }
             this.stopTimeout = setTimeout(function() {
                 self.sendStopRequest(null, true);
@@ -224,43 +230,58 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     return; // avoid duplicate calls
                 }
 
-                if (self.manualStop) {
-                    self.currentTargetPosition = self.lastPosition;
+                if (!self.manualStop) {
+                    if (moveUp && self.lastPosition < self.currentTargetPosition) {
+                        self.lastPosition += 1;
+                        return;
+                    } else if (!moveUp && self.lastPosition > self.currentTargetPosition) {
+                        self.lastPosition += -1;
+                        return;
+                    }
                 }
 
-                // TODO: should periodic polling of self.getCurrentPosition be performed if self.positionURL is set?
-                if (moveUp && self.lastPosition < self.currentTargetPosition) {
-                    self.lastPosition += 1;
-                } else if (!moveUp && self.lastPosition > self.currentTargetPosition) {
-                    self.lastPosition += -1;
+                // Reached target
+                targetReached = true; // Block subsequent requests while processing
+
+                if (self.positionURL) {
+                    self.getCurrentPosition(function() {
+                        if (self.manualStop || self.lastPosition == self.currentTargetPosition) {
+                            self.endMoveRequest(moveMessage);
+                        } else {
+                            targetReached = false;
+                        }
+                    }.bind(self));
                 } else {
-                    // Reached target
-                    targetReached = true;
-                    clearInterval(self.stepInterval);
-
-                    self.log(
-                        `End ${moveMessage} (to ${self.currentTargetPosition}%)`
-                    );
-
-                    self.service
-                        .getCharacteristic(Characteristic.CurrentPosition)
-                        .updateValue(self.lastPosition);
-
-                    self.service
-                        .getCharacteristic(Characteristic.TargetPosition)
-                        .updateValue(self.lastPosition);
-
-                    self.currentTargetPosition = self.lastPosition; // In case of overshoot
-
-                    self.service
-                        .getCharacteristic(Characteristic.PositionState)
-                        .updateValue(Characteristic.PositionState.STOPPED);
+                    self.endMoveRequest(moveMessage);
                 }
             }, motionTimeStep);
         }, Math.max(this.responseLag, 0));
     }.bind(this));
 
     return callback(null);
+};
+
+BlindsHTTPAccessory.prototype.endMoveRequest = function(moveMessage) {
+    clearInterval(this.stepInterval);
+
+    this.log.info(
+        `End ${moveMessage} (to ${this.currentTargetPosition}%)`
+    );
+
+    // In case of overshoot or manual stop
+    this.currentTargetPosition = this.lastPosition;
+
+    this.service
+        .getCharacteristic(Characteristic.CurrentPosition)
+        .updateValue(this.lastPosition);
+
+    this.service
+        .getCharacteristic(Characteristic.TargetPosition)
+        .updateValue(this.currentTargetPosition);
+
+    this.service
+        .getCharacteristic(Characteristic.PositionState)
+        .updateValue(Characteristic.PositionState.STOPPED);
 };
 
 BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
