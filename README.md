@@ -144,28 +144,28 @@ Feel free to contribute to make this a better plugin!
 - [Homebridge-Bond](https://github.com/aarons22/homebridge-bond)
 - [Bond API](http://docs-local.appbond.com/)
 
-Sample `config.json`, noting that you need to replace `1.2.3.4` with your Bond IP address, `<deviceId>` with your deviceId, and `<BondToken>` with your Bond token. 
+Sample `config.json`, noting that you need to replace `1.2.3.4` with your Bond IP address, `<deviceId>` with your deviceId, and `<BondToken>` with your Bond token.
 
 These values can be obtained from the Bond app, under `Device settings` for any individual shades.
 
 ```js
     {
-      "accessory": "BlindsHTTP", 
-      "name": "Dining Room Shades", 
+      "accessory": "BlindsHTTP",
+      "name": "Dining Room Shades",
       "up_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Open",
-      "down_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Close", 
-      "stop_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Hold", 
+      "down_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Close",
+      "stop_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Hold",
       "http_method": {
-        "body": "{}", 
+        "body": "{}",
         "headers": {
           "BOND-Token": "<BondToken>"
-        }, 
+        },
         "method": "PUT"
-      }, 
-      "success_codes": [ 204 ], 
-      "motion_time": 11000, 
-      "response_lag": 1000, 
-      "trigger_stop_at_boundaries": false, 
+      },
+      "success_codes": [ 204 ],
+      "motion_time": 11000,
+      "response_lag": 1000,
+      "trigger_stop_at_boundaries": false,
     }
 ```
 
@@ -189,4 +189,33 @@ while read -r line; do
    DEVICE_DETAILS=$( curl -sH "BOND-Token: ${BOND_TOKEN}" "http://${BOND_IP}/v2/devices/${line}" | jq '.name' )
    echo "${DEVICE_DETAILS} ${line}"
 done <<< "${BOND_DEVICES}"
+```
+
+### Tasmota
+
+- [Product Link](https://github.com/arendst/Tasmota)
+
+Sample `config.json`, noting that you need to replace `1.2.3.4` with your Tasmota IP address. As described above, `%%POS%%` is used to supply the target position (0-100) to the plugin.
+
+```js
+    {
+      "accessory": "BlindsHTTP",
+      "name": "Window",
+      "up_url": "http://1.2.3.4/cm?cmnd=ShutterPosition%20%%POS%%",
+      "down_url": "http://1.2.3.4/cm?cmnd=ShutterPosition%20%%POS%%",
+      "stop_url": "http://1.2.3.4/cm?cmnd=Power3%20ON",
+      "http_method": {
+          "method": "GET"
+      },
+      "success_codes": [ 200 ],
+      "max_http_attempts": 5,
+      "retry_delay": 2000,
+      "use_same_url_for_stop": false,
+      "show_stop_button": true,
+      "show_toggle_button": false,
+      "motion_time": 20000,
+      "response_lag": 0,
+      "trigger_stop_at_boundaries": false,
+      "verbose": false
+    }
 ```
