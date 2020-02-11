@@ -210,6 +210,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.lastPosition += -1;
                 } else {
                     // Reached target
+                    clearInterval(self.stepInterval);
+
                     self.log(
                         `End ${moveMessage} (to ${self.currentTargetPosition}%)`
                     );
@@ -227,8 +229,6 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                     self.service
                         .getCharacteristic(Characteristic.PositionState)
                         .updateValue(Characteristic.PositionState.STOPPED);
-
-                    clearInterval(self.stepInterval);
                 }
             }, motionTimeStep);
         }, Math.max(this.responseLag, 0));
