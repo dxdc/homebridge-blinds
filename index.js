@@ -87,6 +87,9 @@ function BlindsHTTPAccessory(log, config) {
     this.service
         .getCharacteristic(Characteristic.PositionState)
         .updateValue(Characteristic.PositionState.STOPPED);
+
+    this.service
+        .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
 }
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
@@ -170,7 +173,21 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     }
 
     this.httpRequest(moveUrl.replace(/%%POS%%/g, this.currentTargetPosition), this.httpMethod, function(body, err) {
+    this.service
+        .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+
+    this.service
+        .getCharacteristic(Characteristic.PositionState)
+        .updateValue(moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING);
+
         if (err) {
+            this.service
+                .getCharacteristic(Characteristic.PositionState)
+                .updateValue(Characteristic.PositionState.STOPPED);
+
+            this.service
+                .getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
+
             return;
         }
 
@@ -255,9 +272,16 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
             this.log.info('Requesting stop');
         }
 
+        this.service
+            .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+
         this.httpRequest(this.stopURL, this.httpMethod, function(body, err) {
             if (err) {
                 this.log.warn('Stop request failed');
+                
+                this.service
+                    .getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
+
             } else {
                 if (targetService) {
                     this.manualStop = true;
