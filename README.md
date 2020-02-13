@@ -89,7 +89,7 @@ When `%%POS%%` is used, note that `stop_url` will not be sent. Because the blind
 
 ### Receiving specific position from the blinds
 
-`position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Optionally, this can also be reported as a single JSON value, e.g. `{"current_position": 40}`, although JSON handling is not very robust and will cause unexpected results if different formats are used. Headers or other methods specified in `http_method` are ignored. For more advanced URL configuration, see above.
+`position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Headers or other methods specified in `http_method` are ignored. Optionally, this response can also be in JSON format, e.g. `{"current_position": 40}`. JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
 
 Ensure that the motion time is configured properly, even when `position_url` is set, as it is used to obtain an estimate of blind position to avoid multiple web requests to the `position_url`. (After the estimated position is reached, the position will be confirmed).
 
