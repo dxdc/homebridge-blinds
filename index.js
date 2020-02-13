@@ -265,7 +265,7 @@ BlindsHTTPAccessory.prototype.endMoveRequest = function(moveMessage) {
     clearInterval(this.stepInterval);
 
     this.log.info(
-        `End ${moveMessage} (to ${this.currentTargetPosition}%)`
+        `End ${moveMessage} to ${this.lastPosition}% (target ${this.currentTargetPosition}%)`
     );
 
     // In case of overshoot or manual stop
