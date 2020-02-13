@@ -116,16 +116,17 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
         }
 
         try {
-            // TODO: add more robust handling for JSON
             const json = JSON.parse(body);
-            body = Object.values(json)[0];
+            body = Object.values(json).filter(function(val) {
+                return !isNaN(val);
+            })[0]; // TODO: add more robust handling for JSON            
         } catch (err) {
             // failed JSON parsing
         }
 
-        const pos = parseInt(body, 10);
-        if (pos < 0 || pos > 100) { // invalid
-            return callback(pos);
+        const pos = parseInt(body, 10) || -1;
+        if (pos < 0 || pos > 100) {
+            return callback(pos); // invalid response
         }
 
         this.lastPosition = pos;
