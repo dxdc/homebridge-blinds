@@ -29,15 +29,13 @@ function BlindsHTTPAccessory(log, config) {
     this.upURL = config.up_url || false;
     this.downURL = config.down_url || false;
     this.positionURL = config.position_url || false;
+    this.positionJsonata = false;
     if (config.position_jsonata) {
         try {
             this.positionJsonata = jsonata(config.position_jsonata);
         } catch (err) {
             this.log.error(`Error parsing jsonata: ${err.message}`);
-            this.positionJsonata = false;
         }
-    } else {
-        this.positionJsonata = false;
     }
 
     this.stopURL = config.stop_url || false;
