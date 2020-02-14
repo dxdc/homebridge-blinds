@@ -29,6 +29,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "position_url": "http://1.2.3.4/position",
+      "position_jsonata": "ShutterPosition1",
       "stop_url": "http://1.2.3.4/window/stop",
       "http_method": {
         "body": "{}",
@@ -90,6 +91,16 @@ When `%%POS%%` is used, note that `stop_url` will not be sent. Because the blind
 ### Receiving specific position from the blinds
 
 `position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Headers or other methods specified in `http_method` are ignored. Optionally, this response can also be in JSON format, e.g. `{"current_position": 40}`. JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
+
+For more robust handling of `position_url` responses, `position_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be set to parse the result. For example, considering the following JSON response:
+
+```js
+{
+  example: { value: 4 }
+}
+```
+
+If: `position_jsonata` = `example.value`, this would produce the value of `4`. The [JSONata Exerciser](https://try.jsonata.org/) can be a helpful tool for developing custom expressions.
 
 Ensure that the motion time is configured properly, even when `position_url` is set, as it is used to obtain an estimate of blind position to avoid multiple web requests to the `position_url`. (After the estimated position is reached, the position will be confirmed).
 

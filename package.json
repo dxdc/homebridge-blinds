@@ -29,6 +29,7 @@
   ],
   "license": "ISC",
   "dependencies": {
+    "jsonata": "^1.8.1",
     "node-persist": "^2.1.0",
     "request": "^2.88.0",
     "requestretry": "^4.0.2"

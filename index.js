@@ -1,5 +1,6 @@
 'use strict';
 const packageJSON = require('./package.json');
+let jsonata = require('jsonata');
 
 let request = require('requestretry');
 let Service, Characteristic, HomebridgeAPI;
@@ -28,6 +29,17 @@ function BlindsHTTPAccessory(log, config) {
     this.upURL = config.up_url || false;
     this.downURL = config.down_url || false;
     this.positionURL = config.position_url || false;
+    if (config.position_jsonata) {
+        try {
+            this.positionJsonata = jsonata(config.position_jsonata);
+        } catch (err) {
+            this.log.error(`Error parsing jsonata: ${err.message}`);
+            this.positionJsonata = false;
+        }
+    } else {
+        this.positionJsonata = false;
+    }
+
     this.stopURL = config.stop_url || false;
     this.showStopButton = config.show_stop_button || false;
     this.showToggleButton = config.show_toggle_button || false;
@@ -117,11 +129,17 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
 
         try {
             const json = JSON.parse(body);
-            body = Object.values(json).filter(function(val) {
-                return !isNaN(val);
-            })[0]; // TODO: add more robust handling for JSON            
+            if (this.positionJsonata) {
+                body = this.positionJsonata.evaluate(body);
+            } else {
+                body = Object.values(json).filter(function(val) {
+                    return !isNaN(val);
+                })[0];
+            }
         } catch (err) {
-            // failed JSON parsing
+            if (this.verbose) {
+                this.log.error(`Error parsing JSON: ${err.message}`);
+            }
         }
 
         const pos = parseInt(body, 10);
@@ -300,7 +318,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
         this.httpRequest(this.stopURL, this.httpMethod, function(body, err) {
             if (err) {
                 this.log.warn('Stop request failed');
-                
+
                 this.service
                     .getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
 

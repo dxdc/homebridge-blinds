@@ -25,6 +25,11 @@
 				"type": "string",
 				"description": "The URL to get the current blinds position (must be 0-100 response)."
 			},
+			"position_jsonata": {
+				"title": "Jsonata Expression to parse Position URL response",
+				"type": "string",
+				"description": "Jsonata expression to parse position URL response."
+			},
 			"stop_url": {
 				"title": "Stop URL",
 				"type": "string",
