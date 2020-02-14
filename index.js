@@ -124,8 +124,8 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
             // failed JSON parsing
         }
 
-        const pos = parseInt(body, 10) || -1;
-        if (pos < 0 || pos > 100) {
+        const pos = parseInt(body, 10);
+        if (isNaN(pos) || pos < 0 || pos > 100) {
             return callback(pos); // invalid response
         }
 
