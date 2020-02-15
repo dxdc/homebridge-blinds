@@ -241,6 +241,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             }
 
             let targetReached = false;
+            let positionRetries = 0;
 
             self.stepInterval = setInterval(function() {
                 if (targetReached) {
@@ -265,6 +266,12 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                         if (self.manualStop || self.lastPosition == self.currentTargetPosition) {
                             self.endMoveRequest(moveMessage);
                         } else {
+                            ++positionRetries;
+                            if (positionRetries > 10) {
+                                self.log.error(`Didn't reach target after ${positionRetries} tries`);
+                                self.manualStop = true;
+                            }
+
                             targetReached = false;
                         }
                     }.bind(self));
