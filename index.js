@@ -57,7 +57,6 @@ function BlindsHTTPAccessory(log, config) {
         dir: this.cacheDirectory,
         forgiveParseErrors: true
     });
-    this.exactPosRegex = RegExp('%%POS%%', 'g');
 
     // state vars
     this.stopTimeout = null;
@@ -157,6 +156,27 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
     return callback(null, this.currentTargetPosition);
 };
 
+BlindsHTTPAccessory.prototype.replaceUrlPosition = function(url, pos) {
+    const exp = RegExp('%%POS%%', 'g');
+
+    if (typeof url.valueOf() === 'string') {
+        return (exp.test(url)) ? url.replace(exp, pos) : false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(url, 'url') &&
+        typeof url.url.valueOf() === 'string') {
+        if (!exp.test(url.url)) {
+            return false;
+        }
+        url.url = url.url.replace(exp, pos);
+        return url;
+    } else {
+        this.log.error(`Missing url property or non-string property for: ${url}`);
+    }
+    
+    return false;
+};
+
 BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
     if (this.stopTimeout != null) clearTimeout(this.stopTimeout);
     if (this.stepInterval != null) clearInterval(this.stepInterval);
@@ -185,7 +205,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
     const startTimestamp = Date.now();
     const moveUrl = moveUp ? this.upURL : this.downURL;
-    const useExactPosition = this.exactPosRegex.test(moveUrl);
+    const exactPositionUrl = this.replaceUrlPosition(moveUrl, this.currentTargetPosition);
 
     if (this.useSameUrlForStop) {
         this.stopURL = moveUrl;
@@ -198,7 +218,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         .getCharacteristic(Characteristic.PositionState)
         .updateValue(moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING);
 
-    this.httpRequest(useExactPosition ? moveUrl.replace(this.exactPosRegex, this.currentTargetPosition) : moveUrl, this.httpMethod, function(body, err) {
+    this.httpRequest(exactPositionUrl || moveUrl, this.httpMethod, function(body, err) {
         if (err) {
             this.service
                 .getCharacteristic(Characteristic.PositionState)
@@ -221,7 +241,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         );
 
         // Send stop command before target position is reached to account for response_lag
-        if (useExactPosition) {
+        if (exactPositionUrl !== false) {
             if (this.verbose) {
                 self.log.info('Stop command will be skipped; exact position specified');
             }

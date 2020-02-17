@@ -56,7 +56,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 #### Basic
 
-You can omit any of the `up_url`, `down_url`, `stop_url`, `position_url` if you don't want these to send a command.
+You can omit any of the `up_url`, `down_url`, `stop_url` if you don't want these to send a command, and `position_url` if you want the blinds to emulate the position.
 
 You can omit `http_method`, it defaults to `POST`. Note that it can also be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
@@ -68,7 +68,7 @@ You can omit `http_method`, it defaults to `POST`. Note that it can also be conf
 
 #### Advanced
 
-Alternatively, for more advanced configuration of URL's, each URL can be set to a complete request/requestretry object, e.g.:
+Alternatively, for more advanced configuration of URL's, each URL can be set to a complete `request`/`requestretry` object, e.g.:
 
 ```js
       "up_url": {
@@ -90,17 +90,19 @@ If an object is used for the configuration, `http_method`, `max_http_attempts`, 
 
 The plugin emulates the blinds position (it saves it in a variable) using an understanding of how long the blinds take to move and the relative position, but it can be used with `position_url` for realtime feedback.
 
-#### Sending specific (exact) position
+#### Sending specific/exact position (optional)
 
 For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, which will be replaced with the desired target before the URL is requested. For example, use of `http://1.2.3.4/window/up?pos=%%POS%%` would be modified to `http://1.2.3.4/window/up?pos=100` if the position 100 was requested. This is useful for cases where blinds offer the ability to directly specify the value.
 
 When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, that there is no need to send an additional stop command.)
 
-#### Receiving specific position
+#### Receiving specific position (optional)
 
-`position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Headers or other methods specified in `http_method` are ignored. Optionally, this response can also be in JSON format, e.g. `{"current_position": 40}`. JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
+`position_url` must report the current state of the blinds as an integer (0-100) in either plain text or JSON format, e.g. `{"current_position": 40}`. If JSON is used, JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
 
-For more robust handling of `position_url` responses, `position_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be set to parse the result. For example, considering the following JSON response:
+`position_url` defaults to a simple GET request, ignoring headers or other methods specified in `http_method`. If more robust handling is required, `position_url` can be defined as a complete `request`/`requestretry` object as specified in `Advanced URL` above.
+
+If more robust handling of `position_url` responses in JSON format is needed, `position_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be set to parse the result. For example, considering the following JSON response:
 
 ```js
 {
@@ -108,7 +110,7 @@ For more robust handling of `position_url` responses, `position_jsonata` can be 
 }
 ```
 
-If: `position_jsonata` = `example.value`, this would produce the value of `4`. The [JSONata Exerciser](https://try.jsonata.org/) can be a helpful tool for developing custom expressions.
+If `position_jsonata` = `example.value`, this would produce the value of `4`. The [JSONata Exerciser](https://try.jsonata.org/) can be a helpful tool for developing custom expressions.
 
 Ensure that the motion time is configured properly, even when `position_url` is set, as it is used to obtain an estimate of blind position to avoid multiple web requests to the `position_url`. (After the estimated position is reached, the position will be confirmed).
 
