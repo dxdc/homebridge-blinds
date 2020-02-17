@@ -168,12 +168,14 @@ BlindsHTTPAccessory.prototype.replaceUrlPosition = function(url, pos) {
         if (!exp.test(url.url)) {
             return false;
         }
-        url.url = url.url.replace(exp, pos);
-        return url;
+
+        let shallowObj = Object.assign({}, url);
+        shallowObj.url = shallowObj.url.replace(exp, pos);
+        return shallowObj;
     } else {
         this.log.error(`Missing url property or non-string property for: ${url}`);
     }
-    
+
     return false;
 };
 
