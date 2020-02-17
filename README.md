@@ -56,7 +56,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 #### Basic
 
-You can omit any of the `up_url`, `down_url`, `stop_url` if you don't want these to send a command, and `position_url` if you want the blinds to emulate the position.
+You can omit any of the `up_url`, `down_url`, `stop_url` if you don't want these to send a command, and `position_url` if you want the blinds to only emulate the position (using a timer).
 
 You can omit `http_method`, it defaults to `POST`. Note that it can also be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
