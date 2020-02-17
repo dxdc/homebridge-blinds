@@ -51,7 +51,10 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
     }
 ```
 
-### Standard URL Configuration
+### URL Configuration
+---
+
+#### Basic
 
 You can omit any of the `up_url`, `down_url`, `stop_url`, `position_url` if you don't want these to send a command.
 
@@ -63,7 +66,7 @@ You can omit `http_method`, it defaults to `POST`. Note that it can also be conf
 
 `retry_delay` allows you to define the number of ms between HTTP retries (`max_http_attempts` > 1). If omitted, it defaults to 2000 (2 seconds). The minimum number of ms has been set to 100 to avoid excessive requests.
 
-### Advanced URL Configuration
+#### Advanced
 
 Alternatively, for more advanced configuration of URL's, each URL can be set to a complete request/requestretry object, e.g.:
 
@@ -82,13 +85,18 @@ Alternatively, for more advanced configuration of URL's, each URL can be set to 
 
 If an object is used for the configuration, `http_method`, `max_http_attempts`, and `retry_delay` are ignored, and these values must be instead specified directly inside the object. `success_codes` are still used globally.
 
-### Sending specific position to the blinds
+### Blinds position
+---
+
+The plugin emulates the blinds position (it saves it in a variable) using an understanding of how long the blinds take to move and the relative position, but it can be used with `position_url` for realtime feedback.
+
+#### Sending specific (exact) position
 
 For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, which will be replaced with the desired target before the URL is requested. For example, use of `http://1.2.3.4/window/up?pos=%%POS%%` would be modified to `http://1.2.3.4/window/up?pos=100` if the position 100 was requested. This is useful for cases where blinds offer the ability to directly specify the value.
 
-When `%%POS%%` is used, note that `stop_url` will not be sent. Because the blinds can receive a specific position, that there is no need to send an additional stop command.
+When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, that there is no need to send an additional stop command.)
 
-### Receiving specific position from the blinds
+#### Receiving specific position
 
 `position_url` is optional, but must report the current state of the blinds as an integer (0-100) via a simple GET request. Headers or other methods specified in `http_method` are ignored. Optionally, this response can also be in JSON format, e.g. `{"current_position": 40}`. JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
 
@@ -105,6 +113,7 @@ If: `position_jsonata` = `example.value`, this would produce the value of `4`. T
 Ensure that the motion time is configured properly, even when `position_url` is set, as it is used to obtain an estimate of blind position to avoid multiple web requests to the `position_url`. (After the estimated position is reached, the position will be confirmed).
 
 ### Motion Time and Calibration
+---
 
 `motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running. Filming this with your phone to determine the time may be easier than trying to do it with a timer. **NOTE**: If you are performing multiple blind requests simultaneously and are getting network timeouts due to your configuration, try using non-identical `motion_time` (e.g., 9800, 10000, 10200 vs. 10000 for each) it may help.
 
@@ -135,25 +144,36 @@ Therefore, to calibrate your blinds, you will need to set `response_lag`. This c
 - 11.00 (Blinds should have stopped moving here, but `HTTP request delay` was ignored as mentioned above)
 - 11.25 `Stop` command received by blinds, blinds stopped moving
 
-### Remaining Parameters
+### Manual Stop and Toggle buttons
+---
 
-If `show_stop_button` is set to `true`, it will expose a HomeKit button for the stop command. Some logic has also been added to smoothly abort any currently running functions.
+These can be set to `true` or `false`, but the default is `false`.
 
-If `show_toggle_button` is set to `true`, it will expose a HomeKit button that will allow the blinds position to be toggled based on the last command sent. For example, if the last command sent to the blinds was `up`, it will send the command `down`. Note that on start up, `toggle` will have no effect unless either 1) the initial blinds position on start up is either 0 or 100, or, 2) at least one command (`up` or `down`) is sent.
+- `show_stop_button` will expose a HomeKit button for the stop command. Some logic has also been added to smoothly abort any currently running functions.
 
-`verbose` is optional and adds additional logging capabilities
+- `show_toggle_button` will expose a HomeKit button that allows the blinds position to be toggled based on the last command sent. For example, if the last command sent to the blinds was `up`, it will send the command `down`. Note that on start up, `toggle` will have no effect unless either 1) the initial blinds position on start up is either 0 or 100, or, 2) at least one command (`up` or `down`) is sent.
 
-### Parameters for Special Cases
+### Special Cases
+---
 
-If `use_same_url_for_stop` is set to `true`, it will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
+These can be set to `true` or `false`, but the default is `false`.
 
-`trigger_stop_at_boundaries` allows you to choose if a stop command should be fired or not when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themselves, for such blinds it is advised to set this to `false`.
+- `use_same_url_for_stop` will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
 
-## Note
+- `trigger_stop_at_boundaries` sends an additional stop command when moving the blinds to position 0 or 100.  Most blinds dont require this command and will stop by themselves.
 
-Currently the plugin only emulates the position (it saves it in a variable), but it can be used with `position_url` for realtime feedback.
+- `verbose` adds additional logging capabilities.
 
-Feel free to contribute to make this a better plugin!
+## How to contribute
+
+Have an idea? Found a bug? Contributions and pull requests are welcome.
+
+## Support this project
+
+I try to reply to everyone needing help using these projects. Obviously, this takes time. However, if you get some profit from this or just want to encourage me to continue creating stuff, there are few ways you can do it:
+
+-   Starring and sharing the projects you like :rocket:
+-   [![PayPal][badge_paypal]][paypal-donations-dxdc] **PayPal**— You can make one-time donations to **dxdc** via PayPal.
 
 ## Specific configurations by manufacturer:
 
@@ -238,3 +258,6 @@ Sample `config.json`, noting that you need to replace `1.2.3.4` with your Tasmot
       "verbose": false
     }
 ```
+
+[badge_paypal]: https://img.shields.io/badge/Donate-PayPal-blue.svg
+[paypal-donations-dxdc]: https://paypal.me/ddcaspi
