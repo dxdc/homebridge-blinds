@@ -170,6 +170,10 @@ These can be set to `true` or `false`, but the default is `false`.
 
 Have an idea? Found a bug? Contributions and pull requests are welcome.
 
+## Credits
+
+:star2: A huge thank you to @zwerch who is the original creator and developer of this repository.
+
 ## Support this project
 
 I try to reply to everyone needing help using these projects. Obviously, this takes time. However, if you get some profit from this or just want to encourage me to continue creating stuff, there are few ways you can do it:

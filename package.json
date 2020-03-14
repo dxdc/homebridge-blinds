@@ -22,10 +22,10 @@
   "bugs": {
     "url": "https://github.com/dxdc/homebridge-blinds/issues"
   },
-  "author": "Robin Temme <zwerch1337@googlemail.com>",
+  "author": "Daniel Caspi <dan@element26.net>",
   "contributors": [
-    "Jimmy Henderickx <jimmyhdx@gmail.com>",
-    "Daniel Caspi <dan@element26.net>"
+    "Robin Temme <zwerch1337@googlemail.com>",
+    "Jimmy Henderickx <jimmyhdx@gmail.com>"
   ],
   "license": "ISC",
   "dependencies": {
