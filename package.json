@@ -4,7 +4,7 @@
   "description": "A homebridge plugin to control my blinds",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit",
     "lint": "eslint *.js"
   },
   "keywords": [
@@ -17,10 +17,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zwerch/homebridge-blinds.git"
+    "url": "git+https://github.com/dxdc/homebridge-blinds.git"
   },
   "bugs": {
-    "url": "https://github.com/zwerch/homebridge-blinds/issues"
+    "url": "https://github.com/dxdc/homebridge-blinds/issues"
   },
   "author": "Robin Temme <zwerch1337@googlemail.com>",
   "contributors": [
@@ -33,5 +33,8 @@
     "node-persist": "^2.1.0",
     "request": "^2.88.2",
     "requestretry": "^4.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0"
   }
 }
