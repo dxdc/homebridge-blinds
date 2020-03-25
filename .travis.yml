@@ -17,3 +17,5 @@ deploy:
     api_key: "$NPM_API_KEY"
     on:
         tags: true
+        node_js: node
+        branch: master
