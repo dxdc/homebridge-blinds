@@ -22,6 +22,26 @@ sudo npm install -g homebridge-blinds
 
 Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
+#### Standard, basic configuration
+
+```js
+    {
+      "accessory": "BlindsHTTP",
+      "name": "Window",
+      "up_url": "http://1.2.3.4/window/up",
+      "down_url": "http://1.2.3.4/window/down",
+      "stop_url": "http://1.2.3.4/window/stop",
+      "http_method": {
+        "method": "GET"
+      },
+      "success_codes": [ 200 ],
+      "motion_time": 10000,
+      "response_lag": 0
+    }
+```
+
+#### More advanced configuration
+
 ```js
     {
       "accessory": "BlindsHTTP",
@@ -44,6 +64,12 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "use_same_url_for_stop": false,
       "show_stop_button": false,
       "show_toggle_button": false,
+      "webhook_port": 51828,
+      "webhook_http_auth_user": "username",
+      "webhook_http_auth_pass": "password",
+      "webhook_https": false,
+      "webhook_https_keyfile": "/path/to/https.key",
+      "webhook_https_certfile": "/path/to/https.crt",
       "motion_time": 10000,
       "response_lag": 0,
       "trigger_stop_at_boundaries": false,
@@ -96,7 +122,21 @@ For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, 
 
 When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, that there is no need to send an additional stop command.)
 
-#### Receiving specific position (optional)
+
+#### Receiving specific position (optional, one-time basis)
+
+If the following parameters are defined, the position can be updated using a webhook. At a minimum, `webhook_port` must be defined. `webhook_http_auth_user` / `webhook_http_auth_pass` are used for basic authentication. If `webhook_https` is true, then an SSL connection is used instead. If `webhook_https_keyfile` / `webhook_https_keyfile` are not defined, a self-signed certificate will be used instead.
+
+```js
+      "webhook_port": 51828,
+      "webhook_http_auth_user": "username",
+      "webhook_http_auth_pass": "password",
+      "webhook_https": false,
+      "webhook_https_keyfile": "/path/to/https.key",
+      "webhook_https_certfile": "/path/to/https.crt",
+```
+
+#### Receiving specific position (optional, ongoing basis)
 
 `position_url` must report the current state of the blinds as an integer (0-100) in either plain text or JSON format, e.g. `{"current_position": 40}`. If JSON is used, JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
 

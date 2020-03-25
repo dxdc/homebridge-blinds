@@ -29,10 +29,12 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "jsonata": "^1.8.1",
+    "http-auth": "^4.1.2",
+    "jsonata": "^1.8.2",
     "node-persist": "^2.1.0",
     "request": "^2.88.2",
-    "requestretry": "^4.1.0"
+    "requestretry": "^4.1.0",
+    "selfsigned": "^1.10.7"
   },
   "devDependencies": {
     "eslint": "^6.8.0"

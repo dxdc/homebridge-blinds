@@ -1,8 +1,17 @@
 'use strict';
+const CERT_DAYS = 365;
+const CERT_VERSION = 2;
 const packageJSON = require('./package.json');
-let jsonata = require('jsonata');
 
 let request = require('requestretry');
+
+let auth = require('http-auth');
+let fs = require('fs');
+let http = require('http');
+let https = require('https');
+let jsonata = require('jsonata');
+let url = require('url');
+
 let Service, Characteristic, HomebridgeAPI;
 
 module.exports = function(homebridge) {
@@ -24,7 +33,7 @@ function BlindsHTTPAccessory(log, config) {
         return;
     }
 
-    // configuration vars
+    // configuration and http vars
     this.name = config.name;
     this.upURL = config.up_url || false;
     this.downURL = config.down_url || false;
@@ -37,19 +46,32 @@ function BlindsHTTPAccessory(log, config) {
             this.log.error(`Error parsing jsonata: ${err.message}`);
         }
     }
-
     this.stopURL = config.stop_url || false;
-    this.showStopButton = config.show_stop_button || false;
-    this.showToggleButton = config.show_toggle_button || false;
-    this.stopAtBoundaries = config.trigger_stop_at_boundaries || false;
-    this.useSameUrlForStop = config.use_same_url_for_stop || false;
     this.httpMethod = config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
     this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
     this.retryDelay = parseInt(config.retry_delay, 10) || 2000;
+
+    // webhook vars
+    this.webhookPort = parseInt(config.webhook_port, 10) || 0;
+    this.httpAuthUser = config.webhook_http_auth_user || false;
+    this.httpAuthPass = config.webhook_http_auth_pass || false;
+    this.https = config.webhook_https === true;
+    this.httpsKeyFile = config.webhook_https_keyfile || false;
+    this.httpsCertFile = config.webhook_https_certfile || false;
+
+    // expose additional button vars
+    this.showStopButton = config.show_stop_button === true;
+    this.showToggleButton = config.show_toggle_button === true;
+
+    // motion time vars
     this.motionTime = parseInt(config.motion_time, 10) || 10000;
     this.responseLag = parseInt(config.response_lag, 10) || 0;
-    this.verbose = config.verbose || false;
+
+    // advanced vars
+    this.stopAtBoundaries = config.trigger_stop_at_boundaries === true;
+    this.useSameUrlForStop = config.use_same_url_for_stop === true;
+    this.verbose = config.verbose === true;
 
     this.cacheDirectory = HomebridgeAPI.user.persistPath();
     this.storage = require('node-persist');
@@ -99,7 +121,132 @@ function BlindsHTTPAccessory(log, config) {
 
     this.service
         .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+
+    if (this.webhookPort > 0) {
+        this.configureWebhook();
+    }
 }
+
+BlindsHTTPAccessory.prototype.configureWebhook = function() {
+    // Configure basic authentication
+    let basicAuth = false;
+    if (this.httpAuthUser && this.httpAuthPass) {
+        basicAuth = auth.basic({
+            realm: 'Authorization required'
+        }, function(username, password, callback) {
+            callback(username === this.httpAuthUser && password === this.httpAuthPass);
+        }.bind(this));
+    }
+
+    // Webhook callback
+    let createServerCallback = (function(request, response) {
+        const theUrl = request.url;
+        const theUrlParts = url.parse(theUrl, true);
+        const theUrlParams = theUrlParts.query;
+        let body = [];
+
+        request.on('error', (function(err) {
+            this.log.error(`Error: ${err}`);
+        }).bind(this)).on('data', function(chunk) {
+            body.push(chunk);
+        }).on('end', (function() {
+            body = Buffer.concat(body).toString();
+
+            response.on('error', function(err) {
+                this.log.error(`Error: ${err}`);
+            });
+
+            response.setHeader('Content-Type', 'application/json');
+            const pos = (theUrlParams.pos) ? parseInt(theUrlParams.pos, 10) : NaN;
+
+            if (isNaN(pos) || pos < 0 || pos > 100) {
+                this.log.error('Invalid position specified in request.');
+                response.statusCode = 404;
+                response.write(JSON.stringify({ 'success': false }));
+                response.end();
+                return;
+            }
+
+            this.lastPosition = pos;
+            this.service
+                .getCharacteristic(Characteristic.CurrentPosition)
+                .updateValue(this.lastPosition);
+
+            this.log.info(`Current position updated by webhook: ${pos}`);
+            response.statusCode = 200;
+            response.write(JSON.stringify({ 'success': true }));
+            response.end();
+        }).bind(this));
+    }).bind(this);
+
+    // SSL
+    let sslServerOptions = {};
+    if (this.https) {
+        if (!this.httpsKeyFile || !this.httpsCertFile) {
+            this.log('Using automatically generated self-signed SSL certificate');
+            let cachedSSLCert = this.storage.getItemSync('homebridge-blinds-webhook-ssl-cert');
+            if (cachedSSLCert) {
+                const certVersion = cachedSSLCert.certVersion;
+                const timestamp = Date.now() - cachedSSLCert.timestamp;
+                const diffInDays = timestamp / 1000 / 60 / 60 / 24;
+                if (diffInDays > CERT_DAYS - 1 || certVersion !== CERT_VERSION) {
+                    cachedSSLCert = null;
+                }
+            }
+            if (!cachedSSLCert) {
+                this.log('Generating new SSL self-signed certificate');
+                let selfsigned = require('selfsigned');
+                const certAttrs = [{
+                    name: this.name + 'httpWebhook',
+                    value: 'localhost'
+                }];
+                var certOpts = {
+                    days: CERT_DAYS
+                };
+                certOpts.extensions = [{
+                    name: 'subjectAltName',
+                    altNames: [{
+                        type: 2,
+                        value: 'localhost'
+                    }]
+                }];
+                const pems = selfsigned.generate(certAttrs, certOpts);
+                cachedSSLCert = pems;
+                cachedSSLCert.timestamp = Date.now();
+                cachedSSLCert.certVersion = CERT_VERSION;
+                this.storage.setItemSync('homebridge-blinds-webhook-ssl-cert', cachedSSLCert);
+            }
+
+            sslServerOptions = {
+                key: cachedSSLCert.private,
+                cert: cachedSSLCert.cert
+            };
+        } else {
+            this.log(`Using SSL certificate from ${this.httpsKeyFile}`);
+            sslServerOptions = {
+                key: fs.readFileSync(this.httpsKeyFile),
+                cert: fs.readFileSync(this.httpsCertFile)
+            };
+        }
+
+        if (basicAuth) {
+            https.createServer(basicAuth, sslServerOptions, createServerCallback).listen(this.webhookPort, '0.0.0.0');
+        } else {
+            https.createServer(sslServerOptions, createServerCallback).listen(this.webhookPort, '0.0.0.0');
+        }
+
+        this.log.info(`Started HTTPS server for webhook on port ${this.webhookPort}`);
+        return;
+    }
+
+    if (basicAuth) {
+        http.createServer(basicAuth, createServerCallback).listen(this.webhookPort, '0.0.0.0');
+    } else {
+        http.createServer(createServerCallback).listen(this.webhookPort, '0.0.0.0');
+    }
+
+    this.log.info(`Started HTTP server for webhook on port ${this.webhookPort}`);
+};
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     if (this.verbose) {
