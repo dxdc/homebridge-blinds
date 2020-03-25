@@ -127,6 +127,12 @@ When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blin
 
 If the following parameters are defined, the position can be updated using a webhook. At a minimum, `webhook_port` must be defined. `webhook_http_auth_user` / `webhook_http_auth_pass` are used for basic authentication. If `webhook_https` is true, then an SSL connection is used instead. If `webhook_https_keyfile` / `webhook_https_keyfile` are not defined, a self-signed certificate will be used instead.
 
+Once defined, this can be updated as follows: `http://homebridgeip:port/?pos=##`, where `pos=` any integer between 0-100. A simple JSON where `success` is true or false is returned. Additional information is returned in the logs.
+
+For example, `http://192.168.1.40:51828/?pos=30`.
+
+This implementation does take into account whether or not the blinds are moving, but will be most reliable in cases when blinds are stationary.
+
 ```js
       "webhook_port": 51828,
       "webhook_http_auth_user": "username",
@@ -135,6 +141,8 @@ If the following parameters are defined, the position can be updated using a web
       "webhook_https_keyfile": "/path/to/https.key",
       "webhook_https_certfile": "/path/to/https.crt",
 ```
+
+**NOTE**: For HTTPS users, there is a pending PR for self-signed certificates, which can cause the `ee key too small` error. See:  [selfsigned](https://github.com/jfromaniello/selfsigned/pull/35).
 
 #### Receiving specific position (optional, ongoing basis)
 
