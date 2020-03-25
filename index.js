@@ -216,19 +216,13 @@ BlindsHTTPAccessory.prototype.configureWebhook = function() {
                 this.log('Generating new SSL self-signed certificate');
                 let selfsigned = require('selfsigned');
                 const certAttrs = [{
-                    name: this.name + 'httpWebhook',
+                    name: 'commonName',
                     value: 'localhost'
                 }];
                 var certOpts = {
                     days: CERT_DAYS
                 };
-                certOpts.extensions = [{
-                    name: 'subjectAltName',
-                    altNames: [{
-                        type: 2,
-                        value: 'localhost'
-                    }]
-                }];
+
                 const pems = selfsigned.generate(certAttrs, certOpts);
                 cachedSSLCert = pems;
                 cachedSSLCert.timestamp = Date.now();
