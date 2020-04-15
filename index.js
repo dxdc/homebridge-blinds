@@ -287,7 +287,7 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
             const json = JSON.parse(body);
             if (this.positionJsonata) {
                 body = this.positionJsonata.evaluate(body);
-            } else {
+            } else if (typeof json === 'object') {
                 body = Object.values(json).filter(function(val) {
                     return !isNaN(val);
                 })[0];
@@ -300,6 +300,9 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
 
         const pos = parseInt(body, 10);
         if (isNaN(pos) || pos < 0 || pos > 100) {
+            if (this.verbose) {
+                this.log.error(`Invalid response/position: ${pos}`);
+            }
             return callback(pos); // invalid response
         }
 
