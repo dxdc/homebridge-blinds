@@ -300,9 +300,6 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
 
         const pos = parseInt(body, 10);
         if (isNaN(pos) || pos < 0 || pos > 100) {
-            if (this.verbose) {
-                this.log.error(`Invalid response/position: ${pos}`);
-            }
             return callback(pos); // invalid response
         }
 
