@@ -262,10 +262,6 @@ BlindsHTTPAccessory.prototype.configureWebhook = function() {
 };
 
 BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
-    if (this.verbose) {
-        this.log.info(`Requested CurrentPosition: ${this.lastPosition}%`);
-    }
-
     if (this.positionURL) {
         this.setCurrentPositionByUrl(function(err) {
             if (err) {
@@ -274,6 +270,9 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
             return callback(null, this.lastPosition);
         }.bind(this));
     } else {
+        if (this.verbose) {
+            this.log.info(`Requested CurrentPosition: ${this.lastPosition}%`);
+        }
         return callback(null, this.lastPosition);
     }
 };
@@ -305,6 +304,9 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
         }
 
         this.lastPosition = pos;
+        if (this.verbose) {
+            this.log.info(`Requested setCurrentPositionByUrl: ${this.lastPosition}`);
+        }
         return callback(null);
     }.bind(this));
 };
@@ -454,7 +456,10 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
                 if (self.positionURL) {
                     self.getCurrentPosition(function() {
-                        if (self.manualStop || self.lastPosition == self.currentTargetPosition) {
+                        if (self.manualStop || self.lastPosition === self.currentTargetPosition) {
+                            if (self.verbose) {
+                                self.log.info(`Reached target: ${self.currentTargetPosition}, currentPosition: ${self.lastPosition}, manualStop: ${self.manualStop ? 'Y' : 'N'}`);
+                            }
                             self.endMoveRequest(moveMessage);
                         } else {
                             ++positionRetries;
