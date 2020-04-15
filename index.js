@@ -436,8 +436,18 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             let targetReached = false;
             let positionRetries = 0;
 
+            let intervalsToSkip = 0;
+            let lastIntervalPosition = -1;
+
             self.stepInterval = setInterval(function() {
                 if (targetReached) {
+                    if (intervalsToSkip > 1) {
+                        --intervalsToSkip;
+                    } else if (intervalsToSkip === 1) {
+                        intervalsToSkip = 0;
+                        targetReached = false;
+                    }
+
                     return; // avoid duplicate calls
                 }
 
@@ -466,8 +476,15 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
                             if (positionRetries > 10) {
                                 self.log.error(`Didn't reach target after ${positionRetries} tries`);
                                 self.manualStop = true;
+                            } else if (self.lastPosition === lastIntervalPosition) {
+                                if (self.verbose) {
+                                    self.log.info(`Blinds position didn't change: skipping ${positionRetries} cycle${positionRetries > 1 ? 's' : ''}`);
+                                }
+                                intervalsToSkip = positionRetries;
+                                return;
                             }
 
+                            lastIntervalPosition = self.lastPosition;
                             targetReached = false;
                         }
                     }.bind(self));
