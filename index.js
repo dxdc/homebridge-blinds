@@ -12,11 +12,13 @@ let https = require('https');
 let jsonata = require('jsonata');
 let url = require('url');
 
-let Service, Characteristic, HomebridgeAPI;
+let Service, Characteristic, UUIDGen, HomebridgeAPI;
 
 module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
+    UUIDGen = homebridge.hap.uuid;
+
     HomebridgeAPI = homebridge;
     homebridge.registerAccessory(
         'homebridge-blinds',
@@ -642,8 +644,8 @@ BlindsHTTPAccessory.prototype.getServices = function() {
     informationService
         .setCharacteristic(Characteristic.Manufacturer, 'homebridge-blinds')
         .setCharacteristic(Characteristic.Name, this.name)
-        .setCharacteristic(Characteristic.Model, this.name)
-        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory')
+        .setCharacteristic(Characteristic.Model, 'BlindsHTTPAccessory-' + this.name)
+        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory-' + UUIDGen.generate(this.name + this.id.toString()))
         .setCharacteristic(Characteristic.FirmwareRevision, packageJSON.version);
 
     this.services.push(informationService);
