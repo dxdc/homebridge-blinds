@@ -18,7 +18,6 @@ module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     UUIDGen = homebridge.hap.uuid;
-
     HomebridgeAPI = homebridge;
     homebridge.registerAccessory(
         'homebridge-blinds',
@@ -645,7 +644,7 @@ BlindsHTTPAccessory.prototype.getServices = function() {
         .setCharacteristic(Characteristic.Manufacturer, 'homebridge-blinds')
         .setCharacteristic(Characteristic.Name, this.name)
         .setCharacteristic(Characteristic.Model, 'BlindsHTTPAccessory-' + this.name)
-        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory-' + UUIDGen.generate(this.name + this.id.toString()))
+        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory-' + UUIDGen.generate(this.name))
         .setCharacteristic(Characteristic.FirmwareRevision, packageJSON.version);
 
     this.services.push(informationService);
