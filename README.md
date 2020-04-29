@@ -61,6 +61,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "success_codes": [ 200, 204 ],
       "max_http_attempts": 5,
       "retry_delay": 2000,
+      "unique_serial": false,
       "use_same_url_for_stop": false,
       "show_stop_button": false,
       "show_toggle_button": false,
@@ -207,6 +208,8 @@ These can be set to `true` or `false`, but the default is `false`.
 ---
 
 These can be set to `true` or `false`, but the default is `false`.
+
+- `unique_serial` will use a uuid-based serial/model number instead of the default `BlindsHTTPAccessory`. This should only be required for specific external integrations (such as Eve) that may have problems with identical serial numbers for multiple devices.
 
 - `use_same_url_for_stop` will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
 

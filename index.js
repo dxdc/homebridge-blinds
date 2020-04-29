@@ -70,6 +70,7 @@ function BlindsHTTPAccessory(log, config) {
     this.responseLag = parseInt(config.response_lag, 10) || 0;
 
     // advanced vars
+    this.uniqueSerial = config.unique_serial === true;
     this.stopAtBoundaries = config.trigger_stop_at_boundaries === true;
     this.useSameUrlForStop = config.use_same_url_for_stop === true;
     this.verbose = config.verbose === true;
@@ -639,12 +640,20 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
 BlindsHTTPAccessory.prototype.getServices = function() {
     this.services = [];
 
+    let customName = '';
+    let customSerial = '';
+
+    if (this.uniqueSerial) {
+        customName = 'BlindsHTTPAccessory-';
+        customSerial = '-' + UUIDGen.generate(this.name);
+    }
+
     const informationService = new Service.AccessoryInformation();
     informationService
         .setCharacteristic(Characteristic.Manufacturer, 'homebridge-blinds')
         .setCharacteristic(Characteristic.Name, this.name)
-        .setCharacteristic(Characteristic.Model, 'BlindsHTTPAccessory-' + this.name)
-        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory-' + UUIDGen.generate(this.name))
+        .setCharacteristic(Characteristic.Model, customName + this.name)
+        .setCharacteristic(Characteristic.SerialNumber, 'BlindsHTTPAccessory' + customSerial)
         .setCharacteristic(Characteristic.FirmwareRevision, packageJSON.version);
 
     this.services.push(informationService);
