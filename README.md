@@ -261,7 +261,7 @@ These values can be obtained from the Bond app, under `Device settings` for any 
       "success_codes": [ 204 ],
       "motion_time": 11000,
       "response_lag": 1000,
-      "trigger_stop_at_boundaries": false,
+      "trigger_stop_at_boundaries": false
     }
 ```
 
