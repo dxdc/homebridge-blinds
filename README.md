@@ -48,7 +48,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "name": "Window",
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
-      "position_url": "http://1.2.3.4/position",
+      "position_url": "http://1.2.3.4/window/position",
       "position_jsonata": "ShutterPosition1",
       "stop_url": "http://1.2.3.4/window/stop",
       "http_method": {
