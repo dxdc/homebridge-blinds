@@ -31,7 +31,8 @@
 			"position_jsonata": {
 				"title": "Jsonata for Position URL",
 				"type": "string",
-				"description": "Jsonata expression to parse position URL response."
+				"description": "Jsonata expression to parse position URL response.",
+				"placeholder": "ShutterPosition1"
 			},
 			"stop_url": {
 				"title": "Stop URL",
