@@ -13,17 +13,20 @@
 			"up_url": {
 				"title": "Up URL",
 				"type": "string",
-				"description": "The URL to send the 'UP' command."
+				"description": "The URL to send the 'UP' command.",
+				"placeholder": "http://1.2.3.4/window/up"
 			},
 			"down_url": {
 				"title": "Down URL",
 				"type": "string",
-				"description": "The URL to send the 'DOWN' command."
+				"description": "The URL to send the 'DOWN' command.",
+				"placeholder": "http://1.2.3.4/window/down"
 			},
 			"position_url": {
 				"title": "Position URL",
 				"type": "string",
-				"description": "The URL to get the current blinds position (must be 0-100 response)."
+				"description": "The URL to get the current blinds position (must be 0-100 response).",
+				"placeholder": "http://1.2.3.4/window/position"
 			},
 			"position_jsonata": {
 				"title": "Jsonata for Position URL",
@@ -33,7 +36,8 @@
 			"stop_url": {
 				"title": "Stop URL",
 				"type": "string",
-				"description": "The URL to send the 'STOP' command."
+				"description": "The URL to send the 'STOP' command.",
+				"placeholder": "http://1.2.3.4/window/stop"
 			},
 			"use_same_url_for_stop": {
 				"title": "Use Same URL for Stop",
