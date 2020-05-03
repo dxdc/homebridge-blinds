@@ -280,7 +280,7 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
 };
 
 BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
-    this.httpRequest(this.positionURL, { method: 'GET' }, function(body, err) {
+    this.httpRequest(this.positionURL, { method: 'GET' }, function(body, requestTime, err) {
         if (err || !body) {
             return callback('(missing or error)');
         }
@@ -378,7 +378,6 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
 
     let self = this;
 
-    const startTimestamp = Date.now();
     const moveUrl = moveUp ? this.upURL : this.downURL;
     const exactPositionUrl = this.replaceUrlPosition(moveUrl, this.currentTargetPosition);
 
@@ -393,7 +392,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         .getCharacteristic(Characteristic.PositionState)
         .updateValue(moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING);
 
-    this.httpRequest(exactPositionUrl || moveUrl, this.httpMethod, function(body, err) {
+    this.httpRequest(exactPositionUrl || moveUrl, this.httpMethod, function(body, requestTime, err) {
         if (err) {
             this.service
                 .getCharacteristic(Characteristic.PositionState)
@@ -412,7 +411,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
         this.log.info(
-            `Move request sent (${Date.now() - startTimestamp} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
+            `Move request sent ({$requestTime} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
         );
 
         // Send stop command before target position is reached to account for response_lag
@@ -539,7 +538,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
         this.service
             .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
 
-        this.httpRequest(this.stopURL, this.httpMethod, function(body, err) {
+        this.httpRequest(this.stopURL, this.httpMethod, function(body, requestTime, err) {
             if (err) {
                 this.log.warn('Stop request failed');
 
@@ -595,9 +594,8 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
 
     const options = function() {
         if (typeof url.valueOf() === 'string') {
-            // backward compatibility
             if (methods && typeof methods.valueOf() === 'string') {
-                methods = { method: methods };
+                methods = { method: methods }; // backward compatibility
             }
 
             const urlRetries = {
@@ -612,11 +610,20 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
         }
     }.bind(this);
 
+    const startTimestamp = Date.now();
+
     request(options(), function(err, response, body) {
+        const requestTime = Date.now() - startTimestamp;
+
+        if (response && response.timingPhases) {
+            // use `time: true` as request option for profiling
+            this.log.info(`Request profiling: ${ JSON.stringify(response.timingPhases) }`);
+        }
+
         if (!err && response && this.successCodes.includes(response.statusCode)) {
             if (response.attempts > 1 || this.verbose) {
                 this.log.info(
-                    `Request succeeded after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
+                    `Request succeeded in ${requestTime} ms after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
                 );
             }
 
@@ -624,15 +631,17 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
                 this.log.info(`Body (${response ? response.statusCode : 'not defined'}): ${body}`);
             }
 
-            return callback(body, null);
+            return callback(body, requestTime, null);
         } else {
             this.log.error(
                 `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
             );
-            this.log.error(`${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed`);
+            this.log.error(
+                `${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed after ${requestTime} ms`
+            );
             this.log.error(`Body: ${body}`);
 
-            return callback(body, err);
+            return callback(body, requestTime, err);
         }
     }.bind(this));
 };

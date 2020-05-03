@@ -112,11 +112,14 @@ Alternatively, for more advanced configuration of URL's, each URL can be set to 
         },
         "method": "PUT",
         "maxAttempts": 5,
-        "retryDelay": 2000
+        "retryDelay": 2000,
+        "time": false
       },
 ```
 
 If an object is used for the configuration, `http_method`, `max_http_attempts`, and `retry_delay` are ignored, and these values must be instead specified directly inside the object. `success_codes` are still used globally.
+
+If `time` is set to true, a full request timing profile (wait, dns, tcp, firstByte, download, total) will be logged (see [timingPhases](https://github.com/request/request/blob/master/README.md)).
 
 ### Blinds position
 ---
