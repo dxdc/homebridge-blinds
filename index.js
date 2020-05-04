@@ -411,7 +411,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
         this.log.info(
-            `Move request sent ({$requestTime} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
+            `Move request sent (${requestTime} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
         );
 
         // Send stop command before target position is reached to account for response_lag
