@@ -133,7 +133,7 @@ For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, 
 When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, that there is no need to send an additional stop command.)
 
 
-#### Receiving specific position (optional, one-time basis)
+#### Receiving specific position (optional, ad hoc basis)
 
 If the following parameters are defined, the position can be updated using a webhook. At a minimum, `webhook_port` must be defined. `webhook_http_auth_user` / `webhook_http_auth_pass` are used for basic authentication. If `webhook_https` is true, then an SSL connection is used instead. If `webhook_https_keyfile` / `webhook_https_keyfile` are not defined, a self-signed certificate will be used instead.
 
