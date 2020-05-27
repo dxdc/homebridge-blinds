@@ -14,16 +14,12 @@ let url = require('url');
 
 let Service, Characteristic, UUIDGen, HomebridgeAPI;
 
-module.exports = function(homebridge) {
+module.exports = function (homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     UUIDGen = homebridge.hap.uuid;
     HomebridgeAPI = homebridge;
-    homebridge.registerAccessory(
-        'homebridge-blinds',
-        'BlindsHTTP',
-        BlindsHTTPAccessory
-    );
+    homebridge.registerAccessory('homebridge-blinds', 'BlindsHTTP', BlindsHTTPAccessory);
 };
 
 function BlindsHTTPAccessory(log, config) {
@@ -79,7 +75,7 @@ function BlindsHTTPAccessory(log, config) {
     this.storage = require('node-persist');
     this.storage.initSync({
         dir: this.cacheDirectory,
-        forgiveParseErrors: true
+        forgiveParseErrors: true,
     });
 
     // state vars
@@ -90,15 +86,17 @@ function BlindsHTTPAccessory(log, config) {
     this.currentTargetPosition = this.lastPosition;
 
     // track last command for toggleService; assume known command if position is 0 or 100 otherwise null
-    this.lastCommandMoveUp = (this.currentTargetPosition % 100 > 0) ? null : (this.currentTargetPosition === 100);
+    this.lastCommandMoveUp = this.currentTargetPosition % 100 > 0 ? null : this.currentTargetPosition === 100;
 
     if (this.positionURL) {
-        this.getCurrentPosition(function() {
-            this.currentTargetPosition = this.lastPosition;
-            if (this.currentTargetPosition % 100 === 0) {
-                this.lastCommandMoveUp = (this.currentTargetPosition === 100);
-            }
-        }.bind(this));
+        this.getCurrentPosition(
+            function () {
+                this.currentTargetPosition = this.lastPosition;
+                if (this.currentTargetPosition % 100 === 0) {
+                    this.lastCommandMoveUp = this.currentTargetPosition === 100;
+                }
+            }.bind(this),
+        );
     }
 
     // register the service and provide the functions
@@ -106,9 +104,7 @@ function BlindsHTTPAccessory(log, config) {
 
     // the current position (0-100)
     // https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit.ts#L712
-    this.service
-        .getCharacteristic(Characteristic.CurrentPosition)
-        .on('get', this.getCurrentPosition.bind(this));
+    this.service.getCharacteristic(Characteristic.CurrentPosition).on('get', this.getCurrentPosition.bind(this));
 
     // the target position (0-100)
     // https://github.com/KhaosT/HAP-NodeJS/blob/master/src/lib/gen/HomeKit.ts#L2781
@@ -117,88 +113,95 @@ function BlindsHTTPAccessory(log, config) {
         .on('get', this.getTargetPosition.bind(this))
         .on('set', this.setTargetPosition.bind(this));
 
-    this.service
-        .getCharacteristic(Characteristic.PositionState)
-        .updateValue(Characteristic.PositionState.STOPPED);
+    this.service.getCharacteristic(Characteristic.PositionState).updateValue(Characteristic.PositionState.STOPPED);
 
-    this.service
-        .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+    this.service.getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
 
     if (this.webhookPort > 0) {
         this.configureWebhook();
     }
 }
 
-BlindsHTTPAccessory.prototype.configureWebhook = function() {
+BlindsHTTPAccessory.prototype.configureWebhook = function () {
     // Configure basic authentication
     let basicAuth = false;
     if (this.httpAuthUser && this.httpAuthPass) {
-        basicAuth = auth.basic({
-            realm: 'Authorization required'
-        }, function(username, password, callback) {
-            callback(username === this.httpAuthUser && password === this.httpAuthPass);
-        }.bind(this));
+        basicAuth = auth.basic(
+            {
+                realm: 'Authorization required',
+            },
+            function (username, password, callback) {
+                callback(username === this.httpAuthUser && password === this.httpAuthPass);
+            }.bind(this),
+        );
     }
 
     // Webhook callback
-    let createServerCallback = (function(request, response) {
+    let createServerCallback = function (request, response) {
         const theUrl = request.url;
         const theUrlParts = url.parse(theUrl, true);
         const theUrlParams = theUrlParts.query;
         let body = [];
 
-        request.on('error', (function(err) {
-            this.log.error(`Error: ${err}`);
-        }).bind(this)).on('data', function(chunk) {
-            body.push(chunk);
-        }).on('end', (function() {
-            body = Buffer.concat(body).toString();
+        request
+            .on(
+                'error',
+                function (err) {
+                    this.log.error(`Error: ${err}`);
+                }.bind(this),
+            )
+            .on('data', function (chunk) {
+                body.push(chunk);
+            })
+            .on(
+                'end',
+                function () {
+                    body = Buffer.concat(body).toString();
 
-            response.on('error', function(err) {
-                this.log.error(`Error: ${err}`);
-            });
+                    response.on('error', function (err) {
+                        this.log.error(`Error: ${err}`);
+                    });
 
-            response.setHeader('Content-Type', 'application/json');
-            const pos = (theUrlParams.pos) ? parseInt(theUrlParams.pos, 10) : NaN;
+                    response.setHeader('Content-Type', 'application/json');
+                    const pos = theUrlParams.pos ? parseInt(theUrlParams.pos, 10) : NaN;
 
-            if (isNaN(pos) || pos < 0 || pos > 100) {
-                this.log.error('Invalid position specified in request.');
-                response.statusCode = 404;
-                response.write(JSON.stringify({ 'success': false }));
-                response.end();
-                return;
-            }
+                    if (isNaN(pos) || pos < 0 || pos > 100) {
+                        this.log.error('Invalid position specified in request.');
+                        response.statusCode = 404;
+                        response.write(JSON.stringify({ success: false }));
+                        response.end();
+                        return;
+                    }
 
-            if (this.stepInterval === null) {
-                // still moving
-                if (this.stopTimeout !== null) {
-                    clearTimeout(this.stopTimeout);
-                    this.stopTimeout = null;
-                }
-                if (this.lagTimeout !== null) {
-                    clearTimeout(this.lagTimeout);
-                    this.lagTimeout = null;
-                }
+                    if (this.stepInterval === null) {
+                        // still moving
+                        if (this.stopTimeout !== null) {
+                            clearTimeout(this.stopTimeout);
+                            this.stopTimeout = null;
+                        }
+                        if (this.lagTimeout !== null) {
+                            clearTimeout(this.lagTimeout);
+                            this.lagTimeout = null;
+                        }
 
-                this.currentTargetPosition = pos;
-                this.service
-                    .getCharacteristic(Characteristic.TargetPosition)
-                    .updateValue(this.currentTargetPosition);
+                        this.currentTargetPosition = pos;
+                        this.service
+                            .getCharacteristic(Characteristic.TargetPosition)
+                            .updateValue(this.currentTargetPosition);
 
-                this.log.info(`Current target updated by webhook: ${pos}`);
-            }
+                        this.log.info(`Current target updated by webhook: ${pos}`);
+                    }
 
-            this.lastPosition = pos;
-            this.service
-                .getCharacteristic(Characteristic.CurrentPosition)
-                .updateValue(this.lastPosition);
-            this.log.info(`Current position updated by webhook: ${pos}`);
+                    this.lastPosition = pos;
+                    this.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(this.lastPosition);
+                    this.log.info(`Current position updated by webhook: ${pos}`);
 
-            response.statusCode = 200;
-            response.write(JSON.stringify({ 'success': true }));
-            response.end();
-        }).bind(this));
-    }).bind(this);
+                    response.statusCode = 200;
+                    response.write(JSON.stringify({ success: true }));
+                    response.end();
+                }.bind(this),
+            );
+    }.bind(this);
 
     // SSL
     let sslServerOptions = {};
@@ -217,12 +220,14 @@ BlindsHTTPAccessory.prototype.configureWebhook = function() {
             if (!cachedSSLCert) {
                 this.log('Generating new SSL self-signed certificate');
                 let selfsigned = require('selfsigned');
-                const certAttrs = [{
-                    name: 'commonName',
-                    value: 'localhost'
-                }];
+                const certAttrs = [
+                    {
+                        name: 'commonName',
+                        value: 'localhost',
+                    },
+                ];
                 var certOpts = {
-                    days: CERT_DAYS
+                    days: CERT_DAYS,
                 };
 
                 const pems = selfsigned.generate(certAttrs, certOpts);
@@ -234,13 +239,13 @@ BlindsHTTPAccessory.prototype.configureWebhook = function() {
 
             sslServerOptions = {
                 key: cachedSSLCert.private,
-                cert: cachedSSLCert.cert
+                cert: cachedSSLCert.cert,
             };
         } else {
             this.log(`Using SSL certificate from ${this.httpsKeyFile}`);
             sslServerOptions = {
                 key: fs.readFileSync(this.httpsKeyFile),
-                cert: fs.readFileSync(this.httpsCertFile)
+                cert: fs.readFileSync(this.httpsCertFile),
             };
         }
 
@@ -263,14 +268,16 @@ BlindsHTTPAccessory.prototype.configureWebhook = function() {
     this.log.info(`Started HTTP server for webhook on port ${this.webhookPort}`);
 };
 
-BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
+BlindsHTTPAccessory.prototype.getCurrentPosition = function (callback) {
     if (this.positionURL) {
-        this.setCurrentPositionByUrl(function(err) {
-            if (err) {
-                this.log.error(`setCurrentPositionByUrl failed; invalid response (should be 0-100): ${err}`);
-            }
-            return callback(null, this.lastPosition);
-        }.bind(this));
+        this.setCurrentPositionByUrl(
+            function (err) {
+                if (err) {
+                    this.log.error(`setCurrentPositionByUrl failed; invalid response (should be 0-100): ${err}`);
+                }
+                return callback(null, this.lastPosition);
+            }.bind(this),
+        );
     } else {
         if (this.verbose) {
             this.log.info(`Requested CurrentPosition: ${this.lastPosition}%`);
@@ -279,56 +286,59 @@ BlindsHTTPAccessory.prototype.getCurrentPosition = function(callback) {
     }
 };
 
-BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function(callback) {
-    this.httpRequest(this.positionURL, { method: 'GET' }, function(body, requestTime, err) {
-        if (err || !body) {
-            return callback('(missing or error)');
-        }
-
-        try {
-            const json = JSON.parse(body);
-            if (this.positionJsonata) {
-                body = this.positionJsonata.evaluate(body);
-            } else if (typeof json === 'object') {
-                body = Object.values(json).filter(function(val) {
-                    return !isNaN(val);
-                })[0];
+BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function (callback) {
+    this.httpRequest(
+        this.positionURL,
+        { method: 'GET' },
+        function (body, requestTime, err) {
+            if (err || !body) {
+                return callback('(missing or error)');
             }
-        } catch (err) {
+
+            try {
+                const json = JSON.parse(body);
+                if (this.positionJsonata) {
+                    body = this.positionJsonata.evaluate(body);
+                } else if (typeof json === 'object') {
+                    body = Object.values(json).filter(function (val) {
+                        return !isNaN(val);
+                    })[0];
+                }
+            } catch (err) {
+                if (this.verbose) {
+                    this.log.error(`Error parsing JSON: ${err.message}`);
+                }
+            }
+
+            const pos = parseInt(body, 10);
+            if (isNaN(pos) || pos < 0 || pos > 100) {
+                return callback(pos); // invalid response
+            }
+
+            this.lastPosition = pos;
             if (this.verbose) {
-                this.log.error(`Error parsing JSON: ${err.message}`);
+                this.log.info(`Requested setCurrentPositionByUrl: ${this.lastPosition}`);
             }
-        }
-
-        const pos = parseInt(body, 10);
-        if (isNaN(pos) || pos < 0 || pos > 100) {
-            return callback(pos); // invalid response
-        }
-
-        this.lastPosition = pos;
-        if (this.verbose) {
-            this.log.info(`Requested setCurrentPositionByUrl: ${this.lastPosition}`);
-        }
-        return callback(null);
-    }.bind(this));
+            return callback(null);
+        }.bind(this),
+    );
 };
 
-BlindsHTTPAccessory.prototype.getTargetPosition = function(callback) {
+BlindsHTTPAccessory.prototype.getTargetPosition = function (callback) {
     if (this.verbose) {
         this.log.info(`Requested TargetPosition: ${this.currentTargetPosition}%`);
     }
     return callback(null, this.currentTargetPosition);
 };
 
-BlindsHTTPAccessory.prototype.replaceUrlPosition = function(url, pos) {
+BlindsHTTPAccessory.prototype.replaceUrlPosition = function (url, pos) {
     const exp = RegExp('%%POS%%', 'g');
 
     if (typeof url.valueOf() === 'string') {
-        return (exp.test(url)) ? url.replace(exp, pos) : false;
+        return exp.test(url) ? url.replace(exp, pos) : false;
     }
 
-    if (Object.prototype.hasOwnProperty.call(url, 'url') &&
-        typeof url.url.valueOf() === 'string') {
+    if (Object.prototype.hasOwnProperty.call(url, 'url') && typeof url.url.valueOf() === 'string') {
         if (!exp.test(url.url)) {
             return false;
         }
@@ -343,7 +353,7 @@ BlindsHTTPAccessory.prototype.replaceUrlPosition = function(url, pos) {
     return false;
 };
 
-BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
+BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
     if (this.stopTimeout !== null) {
         clearTimeout(this.stopTimeout);
         this.stopTimeout = null;
@@ -364,15 +374,11 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
             this.log.info(`Already there: ${this.currentTargetPosition}%`);
             return callback(null);
         } else {
-            this.log.info(
-                `Already there: ${this.currentTargetPosition}%, re-sending request`
-            );
+            this.log.info(`Already there: ${this.currentTargetPosition}%, re-sending request`);
         }
     }
 
-    const moveUp =
-        this.currentTargetPosition > this.lastPosition ||
-        this.currentTargetPosition == 100;
+    const moveUp = this.currentTargetPosition > this.lastPosition || this.currentTargetPosition == 100;
     const moveMessage = `Move ${moveUp ? 'up' : 'down'}`;
     this.log.info(`Requested ${moveMessage} (to ${this.currentTargetPosition}%)`);
 
@@ -385,145 +391,151 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function(pos, callback) {
         this.stopURL = moveUrl;
     }
 
-    this.service
-        .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+    this.service.getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
 
     this.service
         .getCharacteristic(Characteristic.PositionState)
         .updateValue(moveUp ? Characteristic.PositionState.INCREASING : Characteristic.PositionState.DECREASING);
 
-    this.httpRequest(exactPositionUrl || moveUrl, this.httpMethod, function(body, requestTime, err) {
-        if (err) {
-            this.service
-                .getCharacteristic(Characteristic.PositionState)
-                .updateValue(Characteristic.PositionState.STOPPED);
+    this.httpRequest(
+        exactPositionUrl || moveUrl,
+        this.httpMethod,
+        function (body, requestTime, err) {
+            if (err) {
+                this.service
+                    .getCharacteristic(Characteristic.PositionState)
+                    .updateValue(Characteristic.PositionState.STOPPED);
 
-            this.service
-                .getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
+                this.service.getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
 
-            return;
-        }
-
-        this.lastCommandMoveUp = moveUp;
-
-        this.storage.setItemSync(this.name, this.currentTargetPosition);
-        const motionTimeStep = this.motionTime / 100;
-        const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
-
-        this.log.info(
-            `Move request sent (${requestTime} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${Math.round(this.responseLag / 100) / 10}s response lag)...`
-        );
-
-        // Send stop command before target position is reached to account for response_lag
-        if (exactPositionUrl !== false) {
-            if (this.verbose) {
-                self.log.info('Stop command will be skipped; exact position specified');
-            }
-        } else if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
-            if (this.verbose) {
-                self.log.info('Stop command will be requested');
-            }
-            this.stopTimeout = setTimeout(function() {
-                self.sendStopRequest(null, true);
-            }, Math.max(waitDelay, 0));
-        }
-
-        // Delay for response lag, then track movement of blinds
-        this.lagTimeout = setTimeout(function() {
-            if (self.verbose) {
-                self.log.info('Timeout finished');
+                return;
             }
 
-            let targetReached = false;
-            let positionRetries = 0;
+            this.lastCommandMoveUp = moveUp;
 
-            let intervalsToSkip = 0;
-            let lastIntervalPosition = -1;
+            this.storage.setItemSync(this.name, this.currentTargetPosition);
+            const motionTimeStep = this.motionTime / 100;
+            const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
-            self.stepInterval = setInterval(function() {
-                if (targetReached) {
-                    if (intervalsToSkip > 1) {
-                        --intervalsToSkip;
-                    } else if (intervalsToSkip === 1) {
-                        intervalsToSkip = 0;
-                        targetReached = false;
-                    }
+            this.log.info(
+                `Move request sent (${requestTime} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${
+                    Math.round(this.responseLag / 100) / 10
+                }s response lag)...`,
+            );
 
-                    return; // avoid duplicate calls
+            // Send stop command before target position is reached to account for response_lag
+            if (exactPositionUrl !== false) {
+                if (this.verbose) {
+                    self.log.info('Stop command will be skipped; exact position specified');
+                }
+            } else if (this.stopAtBoundaries || this.currentTargetPosition % 100 > 0) {
+                if (this.verbose) {
+                    self.log.info('Stop command will be requested');
+                }
+                this.stopTimeout = setTimeout(function () {
+                    self.sendStopRequest(null, true);
+                }, Math.max(waitDelay, 0));
+            }
+
+            // Delay for response lag, then track movement of blinds
+            this.lagTimeout = setTimeout(function () {
+                if (self.verbose) {
+                    self.log.info('Timeout finished');
                 }
 
-                if (!self.manualStop) {
-                    if (moveUp && self.lastPosition < self.currentTargetPosition) {
-                        self.lastPosition += 1;
-                        return;
-                    } else if (!moveUp && self.lastPosition > self.currentTargetPosition) {
-                        self.lastPosition += -1;
-                        return;
-                    }
-                }
+                let targetReached = false;
+                let positionRetries = 0;
 
-                // Reached target
-                targetReached = true; // Block subsequent requests while processing
+                let intervalsToSkip = 0;
+                let lastIntervalPosition = -1;
 
-                if (self.positionURL) {
-                    self.getCurrentPosition(function() {
-                        if (self.manualStop || self.lastPosition === self.currentTargetPosition) {
-                            if (self.verbose) {
-                                self.log.info(`Reached target: ${self.currentTargetPosition}, currentPosition: ${self.lastPosition}, manualStop: ${self.manualStop ? 'Y' : 'N'}`);
-                            }
-                            self.endMoveRequest(moveMessage);
-                        } else {
-                            ++positionRetries;
-                            if (positionRetries > 10) {
-                                self.log.error(`Didn't reach target after ${positionRetries} tries`);
-                                self.manualStop = true;
-                            } else if (self.lastPosition === lastIntervalPosition) {
-                                if (self.verbose) {
-                                    self.log.info(`Blinds position didn't change: skipping ${positionRetries} cycle${positionRetries > 1 ? 's' : ''}`);
-                                }
-                                intervalsToSkip = positionRetries;
-                                return;
-                            }
-
-                            lastIntervalPosition = self.lastPosition;
+                self.stepInterval = setInterval(function () {
+                    if (targetReached) {
+                        if (intervalsToSkip > 1) {
+                            --intervalsToSkip;
+                        } else if (intervalsToSkip === 1) {
+                            intervalsToSkip = 0;
                             targetReached = false;
                         }
-                    }.bind(self));
-                } else {
-                    self.endMoveRequest(moveMessage);
-                }
-            }, motionTimeStep);
-        }, Math.max(this.responseLag, 0));
-    }.bind(this));
+
+                        return; // avoid duplicate calls
+                    }
+
+                    if (!self.manualStop) {
+                        if (moveUp && self.lastPosition < self.currentTargetPosition) {
+                            self.lastPosition += 1;
+                            return;
+                        } else if (!moveUp && self.lastPosition > self.currentTargetPosition) {
+                            self.lastPosition += -1;
+                            return;
+                        }
+                    }
+
+                    // Reached target
+                    targetReached = true; // Block subsequent requests while processing
+
+                    if (self.positionURL) {
+                        self.getCurrentPosition(
+                            function () {
+                                if (self.manualStop || self.lastPosition === self.currentTargetPosition) {
+                                    if (self.verbose) {
+                                        self.log.info(
+                                            `Reached target: ${self.currentTargetPosition}, currentPosition: ${
+                                                self.lastPosition
+                                            }, manualStop: ${self.manualStop ? 'Y' : 'N'}`,
+                                        );
+                                    }
+                                    self.endMoveRequest(moveMessage);
+                                } else {
+                                    ++positionRetries;
+                                    if (positionRetries > 10) {
+                                        self.log.error(`Didn't reach target after ${positionRetries} tries`);
+                                        self.manualStop = true;
+                                    } else if (self.lastPosition === lastIntervalPosition) {
+                                        if (self.verbose) {
+                                            self.log.info(
+                                                `Blinds position didn't change: skipping ${positionRetries} cycle${
+                                                    positionRetries > 1 ? 's' : ''
+                                                }`,
+                                            );
+                                        }
+                                        intervalsToSkip = positionRetries;
+                                        return;
+                                    }
+
+                                    lastIntervalPosition = self.lastPosition;
+                                    targetReached = false;
+                                }
+                            }.bind(self),
+                        );
+                    } else {
+                        self.endMoveRequest(moveMessage);
+                    }
+                }, motionTimeStep);
+            }, Math.max(this.responseLag, 0));
+        }.bind(this),
+    );
 
     return callback(null);
 };
 
-BlindsHTTPAccessory.prototype.endMoveRequest = function(moveMessage) {
+BlindsHTTPAccessory.prototype.endMoveRequest = function (moveMessage) {
     clearInterval(this.stepInterval);
     this.stepInterval = null;
 
-    this.log.info(
-        `End ${moveMessage} to ${this.lastPosition}% (target ${this.currentTargetPosition}%)`
-    );
+    this.log.info(`End ${moveMessage} to ${this.lastPosition}% (target ${this.currentTargetPosition}%)`);
 
     // In case of overshoot or manual stop
     this.currentTargetPosition = this.lastPosition;
 
-    this.service
-        .getCharacteristic(Characteristic.CurrentPosition)
-        .updateValue(this.lastPosition);
+    this.service.getCharacteristic(Characteristic.CurrentPosition).updateValue(this.lastPosition);
 
-    this.service
-        .getCharacteristic(Characteristic.TargetPosition)
-        .updateValue(this.currentTargetPosition);
+    this.service.getCharacteristic(Characteristic.TargetPosition).updateValue(this.currentTargetPosition);
 
-    this.service
-        .getCharacteristic(Characteristic.PositionState)
-        .updateValue(Characteristic.PositionState.STOPPED);
+    this.service.getCharacteristic(Characteristic.PositionState).updateValue(Characteristic.PositionState.STOPPED);
 };
 
-BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, callback) {
+BlindsHTTPAccessory.prototype.sendStopRequest = function (targetService, on, callback) {
     if (on) {
         if (targetService) {
             this.log.info('Requesting manual stop');
@@ -535,28 +547,32 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
             this.log.info('Requesting stop');
         }
 
-        this.service
-            .getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
+        this.service.getCharacteristic(Characteristic.ObstructionDetected).updateValue(false);
 
-        this.httpRequest(this.stopURL, this.httpMethod, function(body, requestTime, err) {
-            if (err) {
-                this.log.warn('Stop request failed');
+        this.httpRequest(
+            this.stopURL,
+            this.httpMethod,
+            function (body, requestTime, err) {
+                if (err) {
+                    this.log.warn('Stop request failed');
 
-                this.service
-                    .getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
-
-            } else {
-                if (targetService) {
-                    this.manualStop = true;
+                    this.service.getCharacteristic(Characteristic.ObstructionDetected).updateValue(true);
+                } else {
+                    if (targetService) {
+                        this.manualStop = true;
+                    }
+                    this.log.info('Stop request sent');
                 }
-                this.log.info('Stop request sent');
-            }
-        }.bind(this));
+            }.bind(this),
+        );
 
         if (targetService) {
-            setTimeout(function() {
-                targetService.getCharacteristic(Characteristic.On).updateValue(false);
-            }.bind(this), 1000);
+            setTimeout(
+                function () {
+                    targetService.getCharacteristic(Characteristic.On).updateValue(false);
+                }.bind(this),
+                1000,
+            );
         }
     }
 
@@ -565,20 +581,24 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function(targetService, on, call
     }
 };
 
-BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, callback) {
+BlindsHTTPAccessory.prototype.sendToggleRequest = function (targetService, on, callback) {
     if (on) {
         if (targetService) {
             this.log.info('Requesting toggle');
             if (this.lastCommandMoveUp !== null) {
-                this.service
-                    .setCharacteristic(Characteristic.TargetPosition, this.lastCommandMoveUp ? 0 : 100);
+                this.service.setCharacteristic(Characteristic.TargetPosition, this.lastCommandMoveUp ? 0 : 100);
             } else {
-                this.log.warn('No previously saved command, toggle skipped. Send an up / down request to establish state and enable toggle functionality.');
+                this.log.warn(
+                    'No previously saved command, toggle skipped. Send an up / down request to establish state and enable toggle functionality.',
+                );
             }
 
-            setTimeout(function() {
-                targetService.getCharacteristic(Characteristic.On).updateValue(false);
-            }.bind(this), 1000);
+            setTimeout(
+                function () {
+                    targetService.getCharacteristic(Characteristic.On).updateValue(false);
+                }.bind(this),
+                1000,
+            );
         }
     }
 
@@ -587,12 +607,12 @@ BlindsHTTPAccessory.prototype.sendToggleRequest = function(targetService, on, ca
     }
 };
 
-BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
+BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
     if (!url) {
         return callback(null, null);
     }
 
-    const options = function() {
+    const options = function () {
         if (typeof url.valueOf() === 'string') {
             if (methods && typeof methods.valueOf() === 'string') {
                 methods = { method: methods }; // backward compatibility
@@ -600,9 +620,9 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
 
             const urlRetries = {
                 url: url,
-                maxAttempts: (this.maxHttpAttempts > 1) ? this.maxHttpAttempts : 1,
-                retryDelay: (this.retryDelay > 100) ? this.retryDelay : 100,
-                retryStrategy: request.RetryStrategies.HTTPOrNetworkError
+                maxAttempts: this.maxHttpAttempts > 1 ? this.maxHttpAttempts : 1,
+                retryDelay: this.retryDelay > 100 ? this.retryDelay : 100,
+                retryStrategy: request.RetryStrategies.HTTPOrNetworkError,
             };
             return Object.assign(urlRetries, methods);
         } else {
@@ -612,41 +632,50 @@ BlindsHTTPAccessory.prototype.httpRequest = function(url, methods, callback) {
 
     const startTimestamp = Date.now();
 
-    request(options(), function(err, response, body) {
-        const requestTime = Date.now() - startTimestamp;
+    request(
+        options(),
+        function (err, response, body) {
+            const requestTime = Date.now() - startTimestamp;
 
-        if (response && response.timingPhases) {
-            // use `time: true` as request option for profiling
-            this.log.info(`Request profiling: ${ JSON.stringify(response.timingPhases) }`);
-        }
+            if (response && response.timingPhases) {
+                // use `time: true` as request option for profiling
+                this.log.info(`Request profiling: ${JSON.stringify(response.timingPhases)}`);
+            }
 
-        if (!err && response && this.successCodes.includes(response.statusCode)) {
-            if (response.attempts > 1 || this.verbose) {
-                this.log.info(
-                    `Request succeeded in ${requestTime} ms after ${response.attempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''}`
+            if (!err && response && this.successCodes.includes(response.statusCode)) {
+                if (response.attempts > 1 || this.verbose) {
+                    this.log.info(
+                        `Request succeeded in ${requestTime} ms after ${response.attempts} / ${
+                            this.maxHttpAttempts
+                        } attempt${this.maxHttpAttempts > 1 ? 's' : ''}`,
+                    );
+                }
+
+                if (this.verbose) {
+                    this.log.info(`Body (${response ? response.statusCode : 'not defined'}): ${body}`);
+                }
+
+                return callback(body, requestTime, null);
+            } else {
+                this.log.error(
+                    `Error sending request (HTTP status code ${
+                        response ? response.statusCode : 'not defined'
+                    }): ${err}`,
                 );
+                this.log.error(
+                    `${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${
+                        this.maxHttpAttempts > 1 ? 's' : ''
+                    } failed after ${requestTime} ms`,
+                );
+                this.log.error(`Body: ${body}`);
+
+                return callback(body, requestTime, err);
             }
-
-            if (this.verbose) {
-                this.log.info(`Body (${response ? response.statusCode : 'not defined'}): ${body}`);
-            }
-
-            return callback(body, requestTime, null);
-        } else {
-            this.log.error(
-                `Error sending request (HTTP status code ${response ? response.statusCode : 'not defined'}): ${err}`
-            );
-            this.log.error(
-                `${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${this.maxHttpAttempts > 1 ? 's' : ''} failed after ${requestTime} ms`
-            );
-            this.log.error(`Body: ${body}`);
-
-            return callback(body, requestTime, err);
-        }
-    }.bind(this));
+        }.bind(this),
+    );
 };
 
-BlindsHTTPAccessory.prototype.getServices = function() {
+BlindsHTTPAccessory.prototype.getServices = function () {
     this.services = [];
 
     let customName = '';
@@ -670,18 +699,14 @@ BlindsHTTPAccessory.prototype.getServices = function() {
 
     if (this.showStopButton && (this.stopURL || this.useSameUrlForStop)) {
         const stopService = new Service.Switch(this.name + ' Stop', 'stop');
-        stopService
-            .getCharacteristic(Characteristic.On)
-            .on('set', this.sendStopRequest.bind(this, stopService));
+        stopService.getCharacteristic(Characteristic.On).on('set', this.sendStopRequest.bind(this, stopService));
 
         this.services.push(stopService);
     }
 
     if (this.showToggleButton) {
         const toggleService = new Service.Switch(this.name + ' Toggle', 'toggle');
-        toggleService
-            .getCharacteristic(Characteristic.On)
-            .on('set', this.sendToggleRequest.bind(this, toggleService));
+        toggleService.getCharacteristic(Characteristic.On).on('set', this.sendToggleRequest.bind(this, toggleService));
 
         this.services.push(toggleService);
     }
