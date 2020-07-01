@@ -178,7 +178,6 @@ Ensure that the motion time is configured properly, even when `position_url` is 
 
 `motion_time` is the time, in milliseconds, for your blinds to move from up to down. This should only include the time the motor is running. Filming this with your phone to determine the time may be easier than trying to do it with a timer. **NOTE**: If you are performing multiple blind requests simultaneously and are getting network timeouts due to your configuration, try using non-identical `motion_time` (e.g., 9800, 10000, 10200 vs. 10000 for each) it may help.
 
-**Note!**  
 For cases where `motion_time` varies based on the direction of shutter movement (i.e., due to gravity), `motion_down_time` and `motion_up_time` may be used for more fine-tuning.
 
 - `motion_down_time` is the time, in milliseconds, for your blinds to move from up to down.
@@ -187,8 +186,8 @@ For cases where `motion_time` varies based on the direction of shutter movement 
 
 Ideally, a better approach would be using some kind of equation for calculating the exact time. This would be a nice-to-have feature in the future.
 
-**Note!**  
-`motion_down_time` and `motion_up_time` have a higher priority over `motion_time`. This means, that if all three are explicitly provided in the configuration file, the value set in `motion_time` will be ignored.
+**`motion_down_time` and `motion_up_time` have a higher priority over `motion_time`**. This means, that if all three are explicitly provided in the configuration file, the value set in `motion_time` will be ignored.
+
 **Steps:**
 1. HTTP UP/DOWN request sent; wait for successful reply (i.e., `success_codes`) = `HTTP request delay (measured)`
 2. Wait for device to send the signal to blinds, and movement begins = `response_lag`
