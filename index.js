@@ -62,7 +62,9 @@ function BlindsHTTPAccessory(log, config) {
     this.showToggleButton = config.show_toggle_button === true;
 
     // motion time vars
-    this.motionTime = parseInt(config.motion_time, 10) || 10000;
+    const motionTimeConfig = parseInt(config.motion_time, 10) || 10000;
+    this.motionUpTime = parseInt(config.motion_up_time, 10) || motionTimeConfig;
+    this.motionDownTime = parseInt(config.motion_down_time, 10) || motionTimeConfig;
     this.responseLag = parseInt(config.response_lag, 10) || 0;
 
     // advanced vars
@@ -414,7 +416,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
             this.lastCommandMoveUp = moveUp;
 
             this.storage.setItemSync(this.name, this.currentTargetPosition);
-            const motionTimeStep = this.motionTime / 100;
+            const motionTime = moveUp ? this.motionUpTime : this.motionDownTime;
+            const motionTimeStep = motionTime / 100;
             const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
             this.log.info(

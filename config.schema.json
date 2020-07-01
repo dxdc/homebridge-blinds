@@ -70,6 +70,18 @@
 				"title": "Motion Time",
 				"type": "number",
 				"default": 10000,
+				"description": "Time (in ms) for blinds to move completely up or down."
+			},
+			"motion_up_time": {
+				"title": "Motion Upward Time",
+				"type": "number",
+				"default": 10000,
+				"description": "Time (in ms) for blinds to move completely from down to up."
+			},
+			"motion_down_time": {
+				"title": "Motion Downward Time",
+				"type": "number",
+				"default": 10000,
 				"description": "Time (in ms) for blinds to move completely from up to down."
 			},
 			"response_lag": {
