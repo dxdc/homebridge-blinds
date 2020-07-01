@@ -14,19 +14,22 @@
 				"title": "Up URL",
 				"type": "string",
 				"description": "The URL to send the 'UP' command.",
-				"placeholder": "http://1.2.3.4/window/up"
+				"placeholder": "http://1.2.3.4/window/up",
+				"pattern": "^https?://"
 			},
 			"down_url": {
 				"title": "Down URL",
 				"type": "string",
 				"description": "The URL to send the 'DOWN' command.",
-				"placeholder": "http://1.2.3.4/window/down"
+				"placeholder": "http://1.2.3.4/window/down",
+				"pattern": "^https?://"
 			},
 			"position_url": {
 				"title": "Position URL",
 				"type": "string",
 				"description": "The URL to get the current blinds position (must be 0-100 response).",
-				"placeholder": "http://1.2.3.4/window/position"
+				"placeholder": "http://1.2.3.4/window/position",
+				"pattern": "^https?://"
 			},
 			"position_jsonata": {
 				"title": "Jsonata for Position URL",
@@ -38,7 +41,8 @@
 				"title": "Stop URL",
 				"type": "string",
 				"description": "The URL to send the 'STOP' command.",
-				"placeholder": "http://1.2.3.4/window/stop"
+				"placeholder": "http://1.2.3.4/window/stop",
+				"pattern": "^https?://"
 			},
 			"use_same_url_for_stop": {
 				"title": "Use Same URL for Stop",
@@ -69,25 +73,29 @@
 			"motion_time": {
 				"title": "Motion Time",
 				"type": "number",
-				"default": 10000,
+				"placeholder": "10000",
+				"minimum": 0,
 				"description": "Time (in ms) for blinds to move completely up or down."
 			},
 			"motion_up_time": {
 				"title": "Motion Upward Time",
 				"type": "number",
-				"default": 10000,
+				"placeholder": "10000",
+				"minimum": 0,
 				"description": "Time (in ms) for blinds to move completely from down to up."
 			},
 			"motion_down_time": {
 				"title": "Motion Downward Time",
 				"type": "number",
-				"default": 10000,
+				"placeholder": "10000",
+				"minimum": 0,
 				"description": "Time (in ms) for blinds to move completely from up to down."
 			},
 			"response_lag": {
 				"title": "Response Lag",
 				"type": "number",
 				"default": 0,
+				"minimum": 0,
 				"description": "Time (in ms) for device to respond after HTTP request. Optional parameter to improve time calculation when setting intermediate values."
 			},
 			"trigger_stop_at_boundaries": {
@@ -106,13 +114,15 @@
 				"title": "Maximum HTTP attempts",
 				"type": "number",
 				"default": 5,
+				"minimum": 1,
 				"description": "Maximum number of HTTP attempts (on error or timeout) per request."
 			},
 			"retry_delay": {
-				"title": "Maximum HTTP attempts",
+				"title": "Wait between HTTP attempts",
 				"type": "number",
 				"default": 2000,
-				"description": "Time (in ms) between HTTP attempts."
+				"minimum": 0,
+				"description": "Time (in ms) to wait between HTTP attempts."
 			},
 			"verbose": {
 				"title": "Verbose logging",
@@ -121,5 +131,39 @@
 				"description": "Verbose logging - show getTargetPosition / getTargetState / getCurrentPosition requests."
 			}
 		}
-	}
+	},
+	"layout": [
+		{
+			"type": "flex",
+			"flex-flow": "column wrap",
+			"items": [
+				"name",
+				"up_url",
+				"down_url",
+				"use_same_url_for_stop",
+				"stop_url",
+				"trigger_stop_at_boundaries",
+				"motion_time"
+			]
+		},
+		{
+			"ref": "advanced",
+			"type": "fieldset",
+			"expandable": true,
+			"title": "Additional Options",
+			"items": [
+				"motion_up_time",
+				"motion_down_time",
+				"position_jsonata",
+				"show_stop_button",
+				"show_toggle_button",
+				"http_method",
+				"response_lag",
+				"success_codes",
+				"max_http_attempts",
+				"retry_delay",
+				"verbose"
+			]
+		}
+	]
 }
