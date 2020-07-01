@@ -26,7 +26,8 @@
   "author": "Daniel Caspi <dan@element26.net>",
   "contributors": [
     "Robin Temme <zwerch1337@googlemail.com>",
-    "Jimmy Henderickx <jimmyhdx@gmail.com>"
+    "Jimmy Henderickx <jimmyhdx@gmail.com>",
+    "Slavik Meltser <slavikme@gmail.com>"
   ],
   "license": "ISC",
   "dependencies": {
