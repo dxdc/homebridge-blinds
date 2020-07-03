@@ -65,8 +65,19 @@
 			"http_method": {
 				"title": "HTTP Parameters",
 				"type": "object",
-				"default": {
-					"method": "POST"
+				"properties": {
+					"method": {
+						"title": "HTTP Method",
+						"type": "string",
+						"placeholder": "POST",
+						"typeahead": {
+							"source": [
+								"GET",
+								"POST",
+								"PUT"
+							]
+						}
+					}
 				},
 				"description": "JSON object with custom request HTTP parameters/headers for up/down/stop URL's."
 			},
@@ -94,7 +105,7 @@
 			"response_lag": {
 				"title": "Response Lag",
 				"type": "number",
-				"default": 0,
+				"placeholder": "0",
 				"minimum": 0,
 				"description": "Time (in ms) for device to respond after HTTP request. Optional parameter to improve time calculation when setting intermediate values."
 			},
@@ -107,20 +118,25 @@
 			"success_codes": {
 				"title": "HTTP success codes",
 				"type": "array",
-				"default": [200],
+				"items": {
+					"title": "HTTP Code",
+					"type": "number",
+					"placeholder": "200"
+				},
+				"uniqueItems": true,
 				"description": "Array of response codes that are interpreted as a successful reply."
 			},
 			"max_http_attempts": {
 				"title": "Maximum HTTP attempts",
 				"type": "number",
-				"default": 5,
+				"placeholder": "5",
 				"minimum": 1,
 				"description": "Maximum number of HTTP attempts (on error or timeout) per request."
 			},
 			"retry_delay": {
 				"title": "Wait between HTTP attempts",
 				"type": "number",
-				"default": 2000,
+				"placeholder": "2000",
 				"minimum": 0,
 				"description": "Time (in ms) to wait between HTTP attempts."
 			},
@@ -133,36 +149,48 @@
 		}
 	},
 	"layout": [
-		{
-			"type": "flex",
-			"flex-flow": "column wrap",
-			"items": [
-				"name",
-				"up_url",
-				"down_url",
-				"use_same_url_for_stop",
-				"stop_url",
-				"trigger_stop_at_boundaries",
-				"motion_time"
-			]
-		},
+		"name",
+		"up_url",
+		"down_url",
+		"use_same_url_for_stop",
+		"stop_url",
+		"trigger_stop_at_boundaries",
+		"motion_time",
 		{
 			"ref": "advanced",
 			"type": "fieldset",
 			"expandable": true,
 			"title": "Additional Options",
 			"items": [
-				"motion_up_time",
-				"motion_down_time",
-				"position_jsonata",
-				"show_stop_button",
-				"show_toggle_button",
-				"http_method",
-				"response_lag",
-				"success_codes",
-				"max_http_attempts",
-				"retry_delay",
-				"verbose"
+				{
+					"type": "flex",
+					"flex-flow": "row wrap",
+					"items": [
+						{
+							"type": "flex",
+							"flex-flow": "column",
+							"items": [
+								"motion_up_time",
+								"response_lag",
+								"show_stop_button",
+								"http_method",
+								"max_http_attempts",
+								"verbose"
+							]
+						},
+						{
+							"type": "flex",
+							"flex-flow": "column",
+							"items": [
+								"motion_down_time",
+								"position_jsonata",
+								"show_toggle_button",
+								"success_codes",
+								"retry_delay"
+							]
+						}
+					]
+				}
 			]
 		}
 	]
