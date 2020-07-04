@@ -242,6 +242,10 @@
             "type": "fieldset",
             "expandable": true,
             "items": [
+                {
+                    "type": "help",
+                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target. The Stop URL will not be sent if <span class='text-info'>%%POS%%</span> is used (because the blinds can receive a specific position, there is no need to send an additional stop command).</p>"
+                },
                 "up_url",
                 {
                     "key": "motion_up_time",
@@ -256,6 +260,10 @@
             "type": "fieldset",
             "expandable": true,
             "items": [
+                {
+                    "type": "help",
+                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target. The Stop URL will not be sent if <span class='text-info'>%%POS%%</span> is used (because the blinds can receive a specific position, there is no need to send an additional stop command).</p>"
+                },
                 "down_url",
                 {
                     "key": "motion_down_time",

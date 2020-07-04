@@ -131,7 +131,7 @@ The plugin emulates the blinds position (it saves it in a variable) using an und
 
 For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, which will be replaced with the desired target before the URL is requested. For example, use of `http://1.2.3.4/window/up?pos=%%POS%%` would be modified to `http://1.2.3.4/window/up?pos=100` if the position 100 was requested. This is useful for cases where blinds offer the ability to directly specify the value.
 
-When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, that there is no need to send an additional stop command.)
+When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, there is no need to send an additional stop command.)
 
 
 #### Receiving specific position (optional, ad hoc basis)
