@@ -94,11 +94,7 @@
                         "type": "string",
                         "placeholder": "POST",
                         "typeahead": {
-                            "source": [
-                                "GET",
-                                "POST",
-                                "PUT"
-                            ]
+                            "source": ["GET", "POST", "PUT"]
                         }
                     },
                     "headers": {
@@ -235,10 +231,7 @@
                             "description": "<i>for failed HTTP requests</i>",
                             "type": "fieldset",
                             "expandable": true,
-                            "items": [
-                                "max_http_attempts",
-                                "retry_delay"
-                            ]
+                            "items": ["max_http_attempts", "retry_delay"]
                         }
                     ]
                 }
@@ -346,10 +339,7 @@
             "description": "<i>Calibrate blind movement times</i>",
             "type": "fieldset",
             "expandable": true,
-            "items": [
-                "motion_time",
-                "response_lag"
-            ]
+            "items": ["motion_time", "response_lag"]
         },
         {
             "type": "fieldset",
@@ -380,10 +370,7 @@
             "title": "Additional Options",
             "type": "fieldset",
             "expandable": true,
-            "items": [
-                "verbose",
-                "unique_serial"
-            ]
+            "items": ["verbose", "unique_serial"]
         }
     ]
 }
