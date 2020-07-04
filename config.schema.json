@@ -85,7 +85,7 @@
                 "description": "Expression to parse position URL response",
                 "placeholder": "ShutterPosition1"
             },
-            "http_method": {
+            "http_options": {
                 "notitle": true,
                 "type": "object",
                 "properties": {
@@ -202,21 +202,21 @@
                     "type": "help",
                     "helpvalue": "<em class='text-primary'>If a more advanced configuration is desired, see documentation. Each url parameter can be customized as a complete HTTP object.</em>"
                 },
-                "http_method",
+                "http_options",
                 {
                     "type": "fieldset",
                     "items": [
                         {
-                            "key": "http_method.method"
+                            "key": "http_options.method"
                         },
                         {
                             "type": "help",
                             "helpvalue": "Headers:"
                         },
-                        "http_method.headers.Authorization",
-                        "http_method.headers.BOND-Token",
+                        "http_options.headers.Authorization",
+                        "http_options.headers.BOND-Token",
                         {
-                            "key": "http_method.body"
+                            "key": "http_options.body"
                         },
                         {
                             "type": "help",

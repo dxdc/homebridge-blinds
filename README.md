@@ -37,7 +37,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "up_url": "http://1.2.3.4/window/up",
       "down_url": "http://1.2.3.4/window/down",
       "stop_url": "http://1.2.3.4/window/stop",
-      "http_method": {
+      "http_options": {
         "method": "GET"
       },
       "success_codes": [ 200 ],
@@ -57,7 +57,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
       "position_url": "http://1.2.3.4/window/position",
       "position_jsonata": "ShutterPosition1",
       "stop_url": "http://1.2.3.4/window/stop",
-      "http_method": {
+      "http_options": {
         "body": "{}",
         "headers": {
           "API-Token": "aaabbbcccddd"
@@ -92,7 +92,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
 
 You can omit any of the `up_url`, `down_url`, `stop_url` if you don't want these to send a command, and `position_url` if you want the blinds to only emulate the position (using a timer).
 
-You can omit `http_method`, it defaults to `POST`. Note that it can also be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
+You can omit `http_options`, it defaults to `{ method: 'POST' }`. Note that it can also be configured to accept any number of additional arguments (headers, body, form, etc.) that [request](https://github.com/request/request) or [requestretry](https://github.com/FGRibreau/node-request-retry) supports.
 
 `success_codes` allows you to define which HTTP response codes indicate a successful server response. If omitted, it defaults to 200.
 
@@ -118,7 +118,7 @@ Alternatively, for more advanced configuration of URL's, each URL can be set to 
       },
 ```
 
-If an object is used for the configuration, `http_method`, `max_http_attempts`, and `retry_delay` are ignored, and these values must be instead specified directly inside the object. `success_codes` are still used globally.
+If an object is used for the configuration, `http_options`, `max_http_attempts`, and `retry_delay` are ignored, and these values must be instead specified directly inside the object. `success_codes` are still used globally.
 
 If `time` is set to true, a full request timing profile (wait, dns, tcp, firstByte, download, total) will be logged (see [timingPhases](https://github.com/request/request/blob/master/README.md)).
 
@@ -159,7 +159,7 @@ This implementation does take into account whether or not the blinds are moving,
 
 `position_url` must report the current state of the blinds as an integer (0-100) in either plain text or JSON format, e.g. `{"current_position": 40}`. If JSON is used, JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
 
-`position_url` defaults to a simple GET request, ignoring headers or other methods specified in `http_method`. If more robust handling is required, `position_url` can be defined as a complete `request`/`requestretry` object as specified in `Advanced URL` above.
+`position_url` defaults to a simple GET request, ignoring headers or other methods specified in `http_options`. If more robust handling is required, `position_url` can be defined as a complete `request`/`requestretry` object as specified in `Advanced URL` above.
 
 If more robust handling of `position_url` responses in JSON format is needed, `position_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be set to parse the result. For example, considering the following JSON response:
 
@@ -272,7 +272,7 @@ These values can be obtained from the Bond app, under `Device settings` for any 
       "up_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Open",
       "down_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Close",
       "stop_url": "http://1.2.3.4/v2/devices/<deviceId>/actions/Hold",
-      "http_method": {
+      "http_options": {
         "body": "{}",
         "headers": {
           "BOND-Token": "<BondToken>"
@@ -321,7 +321,7 @@ Sample `config.json`, noting that you need to replace `1.2.3.4` with your Tasmot
       "up_url": "http://1.2.3.4/cm?cmnd=ShutterPosition%20%%POS%%",
       "down_url": "http://1.2.3.4/cm?cmnd=ShutterPosition%20%%POS%%",
       "stop_url": "http://1.2.3.4/cm?cmnd=Power3%20ON",
-      "http_method": {
+      "http_options": {
           "method": "GET"
       },
       "success_codes": [ 200 ],

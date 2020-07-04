@@ -44,7 +44,7 @@ function BlindsHTTPAccessory(log, config) {
         }
     }
     this.stopURL = config.stop_url || false;
-    this.httpMethod = config.http_method || { method: 'POST' };
+    this.httpOptions = config.http_options || config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
     this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
     this.retryDelay = parseInt(config.retry_delay, 10) || 2000;
@@ -401,7 +401,7 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
 
     this.httpRequest(
         exactPositionUrl || moveUrl,
-        this.httpMethod,
+        this.httpOptions,
         function (body, requestTime, err) {
             if (err) {
                 this.service
@@ -554,7 +554,7 @@ BlindsHTTPAccessory.prototype.sendStopRequest = function (targetService, on, cal
 
         this.httpRequest(
             this.stopURL,
-            this.httpMethod,
+            this.httpOptions,
             function (body, requestTime, err) {
                 if (err) {
                     this.log.warn('Stop request failed');
