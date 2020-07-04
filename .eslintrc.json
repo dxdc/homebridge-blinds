@@ -1,0 +1,23 @@
+{
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "plugins": ["json"],
+    "extends": ["eslint:recommended", "plugin:json/recommended"],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module"
+    },
+    "rules": {
+        "indent": ["error", 4],
+        "linebreak-style": ["error", "unix"],
+        "quotes": ["error", "single"],
+        "semi": ["error", "always"],
+        "no-console": "off"
+    }
+}

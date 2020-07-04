@@ -4,8 +4,8 @@
   "description": "A homebridge plugin to control my blinds",
   "main": "index.js",
   "scripts": {
-    "format": "prettier --write config.schema.json *.js",
-    "lint": "eslint *.js",
+    "format": "prettier --write config.schema.json .eslintrc.json *.js",
+    "lint": "eslint *.js *.json",
     "test": "echo \"Error: no test specified\" && exit"
   },
   "keywords": [
@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "eslint": "^7.4.0",
+    "eslint-plugin-json": "^2.1.1",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2"
   }
