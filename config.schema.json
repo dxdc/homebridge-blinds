@@ -1,197 +1,389 @@
 {
-	"pluginAlias": "BlindsHTTP",
-	"pluginType": "accessory",
-	"singular": false,
-	"schema": {
-		"type": "object",
-		"properties": {
-			"name": {
-				"title": "Name",
-				"type": "string",
-				"required": true
-			},
-			"up_url": {
-				"title": "Up URL",
-				"type": "string",
-				"description": "The URL to send the 'UP' command.",
-				"placeholder": "http://1.2.3.4/window/up",
-				"pattern": "^https?://"
-			},
-			"down_url": {
-				"title": "Down URL",
-				"type": "string",
-				"description": "The URL to send the 'DOWN' command.",
-				"placeholder": "http://1.2.3.4/window/down",
-				"pattern": "^https?://"
-			},
-			"position_url": {
-				"title": "Position URL",
-				"type": "string",
-				"description": "The URL to get the current blinds position (must be 0-100 response).",
-				"placeholder": "http://1.2.3.4/window/position",
-				"pattern": "^https?://"
-			},
-			"position_jsonata": {
-				"title": "Jsonata for Position URL",
-				"type": "string",
-				"description": "Jsonata expression to parse position URL response.",
-				"placeholder": "ShutterPosition1"
-			},
-			"stop_url": {
-				"title": "Stop URL",
-				"type": "string",
-				"description": "The URL to send the 'STOP' command.",
-				"placeholder": "http://1.2.3.4/window/stop",
-				"pattern": "^https?://"
-			},
-			"use_same_url_for_stop": {
-				"title": "Use Same URL for Stop",
-				"type": "boolean",
-				"default": false,
-				"description": "Instead of using the 'STOP' command, just re-send the 'UP' or 'DOWN' command."
-			},
-			"show_stop_button": {
-				"title": "Show Stop Button",
-				"type": "boolean",
-				"default": false,
-				"description": "Exposes a 'STOP' button within HomeKit."
-			},
-			"show_toggle_button": {
-				"title": "Show Toggle Button",
-				"type": "boolean",
-				"default": false,
-				"description": "Exposes a 'TOGGLE' button within HomeKit."
-			},
-			"http_method": {
-				"title": "HTTP Parameters",
-				"type": "object",
-				"properties": {
-					"method": {
-						"title": "HTTP Method",
-						"type": "string",
-						"placeholder": "POST",
-						"typeahead": {
-							"source": [
-								"GET",
-								"POST",
-								"PUT"
-							]
-						}
-					}
-				},
-				"description": "JSON object with custom request HTTP parameters/headers for up/down/stop URL's."
-			},
-			"motion_time": {
-				"title": "Motion Time",
-				"type": "number",
-				"placeholder": "10000",
-				"minimum": 0,
-				"description": "Time (in ms) for blinds to move completely up or down."
-			},
-			"motion_up_time": {
-				"title": "Motion Upward Time",
-				"type": "number",
-				"placeholder": "10000",
-				"minimum": 0,
-				"description": "Time (in ms) for blinds to move completely from down to up."
-			},
-			"motion_down_time": {
-				"title": "Motion Downward Time",
-				"type": "number",
-				"placeholder": "10000",
-				"minimum": 0,
-				"description": "Time (in ms) for blinds to move completely from up to down."
-			},
-			"response_lag": {
-				"title": "Response Lag",
-				"type": "number",
-				"placeholder": "0",
-				"minimum": 0,
-				"description": "Time (in ms) for device to respond after HTTP request. Optional parameter to improve time calculation when setting intermediate values."
-			},
-			"trigger_stop_at_boundaries": {
-				"title": "Send Stop at Boundaries",
-				"type": "boolean",
-				"default": false,
-				"description": "Send STOP command at boundaries (0/100) - used if blinds do not stop automatically."
-			},
-			"success_codes": {
-				"title": "HTTP success codes",
-				"type": "array",
-				"items": {
-					"title": "HTTP Code",
-					"type": "number",
-					"placeholder": "200"
-				},
-				"uniqueItems": true,
-				"description": "Array of response codes that are interpreted as a successful reply."
-			},
-			"max_http_attempts": {
-				"title": "Maximum HTTP attempts",
-				"type": "number",
-				"placeholder": "5",
-				"minimum": 1,
-				"description": "Maximum number of HTTP attempts (on error or timeout) per request."
-			},
-			"retry_delay": {
-				"title": "Wait between HTTP attempts",
-				"type": "number",
-				"placeholder": "2000",
-				"minimum": 0,
-				"description": "Time (in ms) to wait between HTTP attempts."
-			},
-			"verbose": {
-				"title": "Verbose logging",
-				"type": "boolean",
-				"default": false,
-				"description": "Verbose logging - show getTargetPosition / getTargetState / getCurrentPosition requests."
-			}
-		}
-	},
-	"layout": [
-		"name",
-		"up_url",
-		"down_url",
-		"use_same_url_for_stop",
-		"stop_url",
-		"trigger_stop_at_boundaries",
-		"motion_time",
-		{
-			"ref": "advanced",
-			"type": "fieldset",
-			"expandable": true,
-			"title": "Additional Options",
-			"items": [
-				{
-					"type": "flex",
-					"flex-flow": "row wrap",
-					"items": [
-						{
-							"type": "flex",
-							"flex-flow": "column",
-							"items": [
-								"motion_up_time",
-								"response_lag",
-								"show_stop_button",
-								"http_method",
-								"max_http_attempts",
-								"verbose"
-							]
-						},
-						{
-							"type": "flex",
-							"flex-flow": "column",
-							"items": [
-								"motion_down_time",
-								"position_jsonata",
-								"show_toggle_button",
-								"success_codes",
-								"retry_delay"
-							]
-						}
-					]
-				}
-			]
-		}
-	]
+    "pluginAlias": "BlindsHTTP",
+    "pluginType": "accessory",
+    "singular": false,
+    "headerDisplay": "Find the full documentation and report bugs [here](https://github.com/dxdc/homebridge-blinds).",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "title": "Name",
+                "type": "string",
+                "required": true
+            },
+            "up_url": {
+                "title": "Up URL",
+                "type": "string",
+                "description": "URL to send the UP command",
+                "placeholder": "http://1.2.3.4/window/up",
+                "format": "uri"
+            },
+            "motion_up_time": {
+                "title": "Motion Upward Time",
+                "type": "integer",
+                "placeholder": 10000,
+                "minimum": 1,
+                "description": "Overrides default motion time (in milliseconds)"
+            },
+            "down_url": {
+                "title": "Down URL",
+                "type": "string",
+                "description": "URL to send the DOWN command",
+                "placeholder": "http://1.2.3.4/window/down",
+                "format": "uri"
+            },
+            "motion_down_time": {
+                "title": "Motion Downward Time",
+                "type": "integer",
+                "placeholder": 10000,
+                "minimum": 1,
+                "description": "Overrides default motion time (in milliseconds)"
+            },
+            "motion_time": {
+                "title": "Motion Time",
+                "type": "integer",
+                "placeholder": 10000,
+                "minimum": 1,
+                "description": "Milliseconds for blinds to move completely up or down"
+            },
+            "show_toggle_button": {
+                "title": "Show Toggle Button",
+                "type": "boolean",
+                "description": "Exposes a toggle (up/down) button"
+            },
+            "stop_url": {
+                "title": "Stop URL",
+                "type": "string",
+                "description": "URL to send the STOP command",
+                "placeholder": "http://1.2.3.4/window/stop",
+                "format": "uri"
+            },
+            "use_same_url_for_stop": {
+                "title": "Use Same URL for Stop",
+                "type": "boolean",
+                "description": "Instead of using the STOP url, just re-send the UP or DOWN url"
+            },
+            "show_stop_button": {
+                "title": "Show Stop Button",
+                "type": "boolean"
+            },
+            "trigger_stop_at_boundaries": {
+                "title": "Send Stop at Boundaries",
+                "type": "boolean",
+                "description": "Only needed if blinds do not stop automatically"
+            },
+            "position_url": {
+                "title": "Position URL",
+                "type": "string",
+                "description": "URL to get the current blinds position (must be 0-100 response)",
+                "placeholder": "http://1.2.3.4/window/position",
+                "format": "uri"
+            },
+            "position_jsonata": {
+                "title": "Jsonata for Position URL",
+                "type": "string",
+                "description": "Expression to parse position URL response",
+                "placeholder": "ShutterPosition1"
+            },
+            "http_method": {
+                "notitle": true,
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "title": "HTTP Method",
+                        "type": "string",
+                        "placeholder": "POST",
+                        "typeahead": {
+                            "source": [
+                                "GET",
+                                "POST",
+                                "PUT"
+                            ]
+                        }
+                    },
+                    "headers": {
+                        "notitle": true,
+                        "type": "object",
+                        "properties": {
+                            "Authorization": {
+                                "type": "string"
+                            },
+                            "BOND-Token": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "body": {
+                        "title": "HTTP Body",
+                        "type": "string"
+                    }
+                }
+            },
+            "response_lag": {
+                "title": "Response Lag",
+                "type": "integer",
+                "placeholder": 0,
+                "minimum": 0,
+                "description": "Milliseconds for device to respond after HTTP request. Improves accuracy for non-boundary positions due to network or motor lag."
+            },
+            "success_codes": {
+                "notitle": true,
+                "type": "array",
+                "uniqueItems": true,
+                "displayFlex": true,
+                "flex-direction": "row",
+                "items": {
+                    "type": "integer",
+                    "placeholder": 200,
+                    "minimum": 1
+                }
+            },
+            "max_http_attempts": {
+                "title": "Maximum HTTP attempts",
+                "type": "integer",
+                "placeholder": 5,
+                "minimum": 1,
+                "description": "Maximum number of HTTP attempts (on error or timeout) per request"
+            },
+            "retry_delay": {
+                "title": "Wait between HTTP attempts",
+                "type": "integer",
+                "placeholder": 2000,
+                "minimum": 0,
+                "description": "Milliseconds between HTTP retries"
+            },
+            "webhook_port": {
+                "title": "Port",
+                "type": "integer",
+                "placeholder": 51828,
+                "minimum": 1
+            },
+            "webhook_http_auth_user": {
+                "title": "Username",
+                "type": "string"
+            },
+            "webhook_http_auth_pass": {
+                "title": "Password",
+                "type": "string"
+            },
+            "webhook_https": {
+                "title": "Use SSL",
+                "type": "boolean"
+            },
+            "webhook_https_keyfile": {
+                "title": "Path To Private Key",
+                "type": "string"
+            },
+            "webhook_https_certfile": {
+                "title": "Path To Certificate",
+                "type": "string"
+            },
+            "unique_serial": {
+                "title": "Unique serial",
+                "type": "boolean",
+                "description": "Uuid-based serial/model number instead of default 'BlindsHTTPAccessory'"
+            },
+            "verbose": {
+                "title": "Verbose logging",
+                "type": "boolean",
+                "description": "Show getTargetPosition / getTargetState / getCurrentPosition requests"
+            }
+        }
+    },
+    "layout": [
+        "name",
+        {
+            "title": "HTTP Configuration",
+            "description": "<i>for UP/DOWN/STOP URLs</i>",
+            "expandable": true,
+            "type": "fieldset",
+            "items": [
+                {
+                    "type": "help",
+                    "helpvalue": "<em class='text-primary'>If a more advanced configuration is desired, see documentation. Each url parameter can be customized as a complete HTTP object.</em>"
+                },
+                "http_method",
+                {
+                    "type": "fieldset",
+                    "items": [
+                        {
+                            "key": "http_method.method"
+                        },
+                        {
+                            "type": "help",
+                            "helpvalue": "Headers:"
+                        },
+                        "http_method.headers.Authorization",
+                        "http_method.headers.BOND-Token",
+                        {
+                            "key": "http_method.body"
+                        },
+                        {
+                            "type": "help",
+                            "helpvalue": "HTTP Success Codes"
+                        },
+                        {
+                            "key": "success_codes",
+                            "items": [
+                                {
+                                    "key": "success_codes[]"
+                                }
+                            ]
+                        },
+                        {
+                            "title": "HTTP Retries",
+                            "description": "<i>for failed HTTP requests</i>",
+                            "type": "fieldset",
+                            "expandable": true,
+                            "items": [
+                                "max_http_attempts",
+                                "retry_delay"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Up URL",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "up_url",
+                {
+                    "key": "motion_up_time",
+                    "condition": {
+                        "functionBody": "return model.motion_up_time || model.up_url"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Down URL",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "down_url",
+                {
+                    "key": "motion_down_time",
+                    "condition": {
+                        "functionBody": "return model.motion_down_time || model.down_url"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Stop URL",
+            "expandable": true,
+            "type": "fieldset",
+            "items": [
+                "stop_url",
+                {
+                    "type": "flex",
+                    "flex-flow": "row wrap",
+                    "items": [
+                        {
+                            "key": "trigger_stop_at_boundaries",
+                            "condition": {
+                                "functionBody": "return model.trigger_stop_at_boundaries || model.stop_url || model.use_same_url_for_stop"
+                            }
+                        },
+                        {
+                            "key": "use_same_url_for_stop",
+                            "condition": {
+                                "functionBody": "return model.use_same_url_for_stop || ((model.down_url || model.up_url) && !model.stop_url)"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Position URL",
+            "description": "<i>Update position by polling URL</i>",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "position_url",
+                {
+                    "key": "position_jsonata",
+                    "condition": {
+                        "functionBody": "return model.position_jsonata || model.position_url"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Position Webhook",
+            "description": "<i>Update position on ad-hoc basis</i>",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "webhook_port",
+                {
+                    "type": "help",
+                    "helpvalue": "<span class='text-info'>Basic Authentication</span>"
+                },
+                "webhook_http_auth_user",
+                "webhook_http_auth_pass",
+                "webhook_https",
+                {
+                    "key": "webhook_https_keyfile",
+                    "condition": {
+                        "functionBody": "return model.webhook_https_keyfile || model.webhook_https_certfile || model.webhook_https"
+                    }
+                },
+                {
+                    "key": "webhook_https_certfile",
+                    "condition": {
+                        "functionBody": "return model.webhook_https_certfile || model.webhook_https_keyfile || model.webhook_https"
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Motion Timing",
+            "description": "<i>Calibrate blind movement times</i>",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "motion_time",
+                "response_lag"
+            ]
+        },
+        {
+            "type": "fieldset",
+            "expandable": true,
+            "title": "HomeKit Buttons",
+            "items": [
+                {
+                    "type": "flex",
+                    "flex-flow": "row wrap",
+                    "items": [
+                        {
+                            "key": "show_toggle_button",
+                            "condition": {
+                                "functionBody": "return model.show_toggle_button || (model.up_url && model.down_url)"
+                            }
+                        },
+                        {
+                            "key": "show_stop_button",
+                            "condition": {
+                                "functionBody": "return model.show_stop_button || model.use_same_url_for_stop || model.stop_url"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Additional Options",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "verbose",
+                "unique_serial"
+            ]
+        }
+    ]
 }
