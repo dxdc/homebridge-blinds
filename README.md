@@ -286,6 +286,11 @@ These values can be obtained from the Bond app, under `Device settings` for any 
     }
 ```
 
+If you are having difficulty finding the settings, you can test your Bond device from the command line directly first (substituting your IP address, BOND-Token, and deviceId, e.g.:
+```sh
+    curl -H "BOND-Token: f074b61f628018fd" -i http://1.2.3.4/v2/devices/79135791/actions/Open -X PUT -d "{}"
+```
+
 Alternatively, sample shell script to retrieve the list of Bond deviceId's using the local API, replacing `1.2.3.4` with your Bond IP address, and `<BondToken>` with your Bond token:
 
 ```sh
