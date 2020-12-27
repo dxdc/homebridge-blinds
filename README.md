@@ -9,7 +9,7 @@
 
 `homebridge-blinds` is a plugin for Homebridge.
 
-Control your `http`-based blinds via Homebridge!
+Control your `http`-based blinds via Homebridge (also works for command-line scripts as well)!
 
 ## Installation
 
