@@ -3,14 +3,16 @@ const CERT_DAYS = 365;
 const CERT_VERSION = 2;
 const packageJSON = require('./package.json');
 
-let request = require('requestretry');
+const request = require('requestretry');
 
-let auth = require('http-auth');
-let fs = require('fs');
-let http = require('http');
-let https = require('https');
-let jsonata = require('jsonata');
-let url = require('url');
+const auth = require('http-auth');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const jsonata = require('jsonata');
+
+const exec = require('child_process').exec;
+const url = require('url');
 
 let Service, Characteristic, UUIDGen, HomebridgeAPI;
 
@@ -140,9 +142,7 @@ BlindsHTTPAccessory.prototype.configureWebhook = function () {
 
     // Webhook callback
     let createServerCallback = function (request, response) {
-        const theUrl = request.url;
-        const theUrlParts = url.parse(theUrl, true);
-        const theUrlParams = theUrlParts.query;
+        const q = url.parse(request.url, true);
         let body = [];
 
         request
@@ -165,7 +165,7 @@ BlindsHTTPAccessory.prototype.configureWebhook = function () {
                     });
 
                     response.setHeader('Content-Type', 'application/json');
-                    const pos = theUrlParams.pos ? parseInt(theUrlParams.pos, 10) : NaN;
+                    const pos = q.query.pos ? parseInt(q.query.pos, 10) : NaN;
 
                     if (isNaN(pos) || pos < 0 || pos > 100) {
                         this.log.error('Invalid position specified in request.');
@@ -634,7 +634,41 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
     }.bind(this);
 
     const startTimestamp = Date.now();
+    const cmdMatch = options.url.match(/(?:file:\/\/)(.*)/i);
 
+    // handling for file
+    if (cmdMatch !== null) {
+        exec(
+            cmdMatch[1],
+            function (err, stdout, stderr) {
+                const requestTime = Date.now() - startTimestamp;
+
+                if (!err) {
+                    if (this.verbose) {
+                        this.log.info(`Command succeeded in ${requestTime} ms`);
+                    }
+
+                    if (this.verbose) {
+                        this.log.info(`Stdout: ${stdout}`);
+                        if (stderr) {
+                            this.log.info(`Stderr: ${stderr}`);
+                        }
+                    }
+
+                    return callback(stdout, requestTime, null);
+                } else {
+                    this.log.error(`Error running command: ${stderr}`);
+                    this.log.info(`Stdout: ${stdout}`);
+
+                    return callback(stdout, requestTime, err);
+                }
+            }.bind(this),
+        );
+
+        return;
+    }
+
+    // handling for http
     request(
         options(),
         function (err, response, body) {
