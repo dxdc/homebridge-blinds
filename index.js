@@ -634,7 +634,7 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
     }.bind(this);
 
     const startTimestamp = Date.now();
-    const cmdMatch = options.url.match(/(?:file:\/\/)(.*)/i);
+    const cmdMatch = options().url.match(/(?:file:\/\/)(.*)/i);
 
     // handling for file
     if (cmdMatch !== null) {
