@@ -107,7 +107,7 @@ You can omit `http_options`, it defaults to `{ method: 'POST' }`. Note that it c
 
 #### Command-line scripts
 
-Any of the url config parameters (`up_url`, `down_url`, `stop_url`, etc.) can be used to trigger command-line scripts instead. To use this feature, simply add the `file://` prefix to the command. The command should be specified in full without URL encoding. This could be used to trigger external blinds commands via serial connection or MQTT, for example.
+Any of the url config parameters (`up_url`, `down_url`, `stop_url`, etc.) can be used to trigger command-line scripts instead. To use this feature, simply add the `file://` prefix to the command. The command should be specified in full without URL encoding. This could be used to trigger external blinds commands via serial connection or MQTT.
 
 For example:
 
