@@ -286,6 +286,8 @@ I try to reply to everyone needing help using these projects. Obviously, this ta
 
 -   Starring and sharing the projects you like :rocket:
 -   [![PayPal][badge_paypal]][paypal-donations-dxdc] **PayPal**— You can make one-time donations to **dxdc** via PayPal.
+-   **Venmo**— You can make one-time donations via Venmo.
+    ![Venmo QR Code](/images/venmo.png?raw=true 'Venmo QR Code')
 
 ## Specific configurations by manufacturer:
 
