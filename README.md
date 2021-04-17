@@ -380,5 +380,29 @@ Sample `config.json`, noting that you need to replace `1.2.3.4` with your Tasmot
 }
 ```
 
+### Louvolite (Neo Smart Blinds)
+
+-   [Product Link](https://www.louvolite.com)
+
+Louvolite blinds require their [One Touch Hub](https://www.louvolite.com/louvolite-home-hub/) for any smart home features. Louvolite's smart home system seems to be build on top of [Neo Smart Blinds](http://neosmartblinds.com) platform. So this config is likely to work with other manufacturers utilising Neo.
+
+You will need the following values for config: 
+* `<controller_ip>` is the IP address of Louvolite's One Touch (or other Neo-based hub), e.g. 1.2.3.4;
+* `<controller_id>` is the controller identifier, which you can find in the Neo app on the controller page, this is a long alphanumeric identifier; 
+* `<blind_code>` you can also find in the Neo app at the bottom of the blind page — it looks something like 123.456-01.
+
+```json
+{
+    "accessory": "BlindsHTTP",
+    "name": "Louvolite Blind",
+    "up_url": "http://<controller_ip>:8838/neo/v1/transmit?id=<controller_id>&command=<blind_code>-up",
+    "down_url": "http://<controller_ip>:8838/neo/v1/transmit?id=<controller_id>&command=<blind_code>-dn",
+    "stop_url": "http://<controller_ip>:8838/neo/v1/transmit?id=<controller_id>&command=<blind_code>-sp",
+    "http_options": {
+        "method": "GET"
+    }
+}
+```
+
 [badge_paypal]: https://img.shields.io/badge/Donate-PayPal-blue.svg
 [paypal-donations-dxdc]: https://paypal.me/ddcaspi
