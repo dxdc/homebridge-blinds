@@ -385,10 +385,11 @@ Sample `config.json`, noting that you need to replace `1.2.3.4` with your Tasmot
 -   [Product Link](https://www.louvolite.com/louvolite-home-hub/)
 -   [Neo Smart Blinds](http://neosmartblinds.com)
 
-Louvolite's smart home system seems to be build on top of Neo Smart Blinds platform, so this configuration is likely to work with other manufacturers utilising Neo. You will need the following values for the config: 
-* `<controller_ip>` is the IP address of Louvolite's One Touch (or other Neo-based hub), e.g. 1.2.3.4;
-* `<controller_id>` is the controller identifier, which you can find in the Neo app on the controller page, this is a long alphanumeric identifier; 
-* `<blind_code>` you can also find in the Neo app at the bottom of the blind page — it looks something like 123.456-01.
+Louvolite's smart home system seems to be build on top of Neo Smart Blinds platform, so this configuration is likely to work with other manufacturers utilising Neo. You will need the following values for the config:
+
+-   `<controller_ip>` is the IP address of Louvolite's One Touch (or other Neo-based hub), e.g. 1.2.3.4;
+-   `<controller_id>` is the controller identifier, which you can find in the Neo app on the controller page, this is a long alphanumeric identifier;
+-   `<blind_code>` you can also find in the Neo app at the bottom of the blind page — it looks something like 123.456-01.
 
 ```json
 {

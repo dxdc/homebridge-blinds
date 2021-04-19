@@ -31,7 +31,7 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "http-auth": "^4.1.2",
+    "http-auth": "^4.1.5",
     "jsonata": "^1.8.4",
     "node-persist": "^2.1.0",
     "request": "^2.88.2",
@@ -39,7 +39,7 @@
     "selfsigned": "^1.10.8"
   },
   "devDependencies": {
-    "eslint": "^7.16.0",
+    "eslint": "^7.24.0",
     "eslint-plugin-json": "^2.1.2",
     "prettier": "^2.2.1",
     "rimraf": "^3.0.2"
