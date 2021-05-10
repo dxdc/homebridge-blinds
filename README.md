@@ -16,7 +16,7 @@ Control your `http`-based blinds via Homebridge (also works for command-line scr
 If you are new to Homebridge, please first read the Homebridge [documentation](https://www.npmjs.com/package/homebridge).
 If you are running on a Raspberry, you will find a tutorial in the [homebridge-punt Wiki](https://github.com/cflurin/homebridge-punt/wiki/Running-Homebridge-on-a-Raspberry-Pi).
 
-Install homebridge:
+Install Homebridge:
 
 ```sh
 sudo npm install -g homebridge
@@ -145,7 +145,7 @@ If `time` is set to true, a full request timing profile (wait, dns, tcp, firstBy
 
 ---
 
-The plugin emulates the blinds position (it saves it in a variable) using an understanding of how long the blinds take to move and the relative position, but it can be used with `position_url` for realtime feedback.
+The plugin emulates the blinds position (it saves it in a variable) using an understanding of how long the blinds take to move and the relative position, but it can be used with `position_url` for real time feedback.
 
 #### Sending specific/exact position (optional)
 
@@ -268,7 +268,7 @@ These can be set to `true` or `false`, but the default is `false`.
 
 -   `use_same_url_for_stop` will send the previously sent url (either, `up_url` or `down_url`) again. This is for specific blind types that don't use a standard stop URL.
 
--   `trigger_stop_at_boundaries` sends an additional stop command when moving the blinds to position 0 or 100. Most blinds dont require this command and will stop by themselves.
+-   `trigger_stop_at_boundaries` sends an additional stop command when moving the blinds to position 0 or 100. Most blinds don't require this command and will stop by themselves.
 
 -   `verbose` adds additional logging capabilities.
 
