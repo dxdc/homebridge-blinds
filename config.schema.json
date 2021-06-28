@@ -87,10 +87,16 @@
                 "placeholder": 15000
             },
             "position_jsonata": {
-                "title": "Jsonata for Position URL",
+                "title": "JSONata for Position URL",
                 "type": "string",
                 "description": "Expression to parse position URL response",
                 "placeholder": "ShutterPosition1"
+            },
+            "map_send_jsonata": {
+                "title": "JSONata for Target Position",
+                "type": "string",
+                "description": "Expression to map target position (optional)",
+                "placeholder": "$round( ( 100 - $number($) ) * 255 / 100 )"
             },
             "http_options": {
                 "notitle": true,
@@ -307,12 +313,25 @@
             ]
         },
         {
+            "title": "Map Position values for URL requests",
+            "description": "<i>Map target position specified by %%POS%% to a new value using JSONata.</i>",
+            "type": "fieldset",
+            "expandable": true,
+            "items": ["map_send_jsonata"]
+        },
+        {
             "title": "Position URL",
             "description": "<i>Update position by polling URL</i>",
             "type": "fieldset",
             "expandable": true,
             "items": [
                 "position_url",
+                {
+                    "key": "position_interval",
+                    "condition": {
+                        "functionBody": "return model.position_interval || model.position_url"
+                    }
+                },
                 {
                     "key": "position_jsonata",
                     "condition": {

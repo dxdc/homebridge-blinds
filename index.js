@@ -42,11 +42,21 @@ function BlindsHTTPAccessory(log, config) {
         try {
             this.positionJsonata = jsonata(config.position_jsonata);
         } catch (err) {
-            this.log.error(`Error parsing jsonata: ${err.message}`);
+            this.log.error(`Error parsing positionJsonata: ${err.message}`);
         }
     }
     this.positionPollInterval = Math.max(parseInt(config.position_interval, 10) || 15000, 5000);
     this.stopURL = config.stop_url || false;
+
+    this.mapSendJsonata = false;
+    if (config.map_send_jsonata) {
+        try {
+            this.mapSendJsonata = jsonata(config.map_send_jsonata);
+        } catch (err) {
+            this.log.error(`Error parsing mapSendJsonata: ${err.message}`);
+        }
+    }
+
     this.httpOptions = config.http_options || config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
     this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
@@ -361,6 +371,10 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function (callback) {
 
 BlindsHTTPAccessory.prototype.replaceUrlPosition = function (url, pos) {
     const exp = RegExp('%%POS%%|"%%POSINT%%"', 'g');
+
+    if (this.mapSendJsonata) {
+        pos = this.mapSendJsonata.evaluate(pos);
+    }
 
     if (typeof url.valueOf() === 'string') {
         return exp.test(url) ? url.replace(exp, pos) : false;

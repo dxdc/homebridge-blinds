@@ -62,6 +62,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
     "position_interval": 15000,
     "position_jsonata": "ShutterPosition1",
     "stop_url": "http://1.2.3.4/window/stop",
+    "map_send_jsonata": "$round( ( 100 - $number($) ) * 255 / 100 )",
     "http_options": {
         "body": "{}",
         "headers": {
@@ -154,6 +155,13 @@ For `up_url` and `down_url`, the variable `%%POS%%` can be included in the URL, 
 
 When `%%POS%%` is used, note that `stop_url` will not be sent. (Because the blinds can receive a specific position, there is no need to send an additional stop command.)
 
+**NOTE**: In scenarios where `%%POS%%` is part of a body object and required to be sent as an integer instead of a string, `{ pos: "%%POSINT%%" }` can be used. In this case, it will be replaced with the target position as an integer value, e.g., `{ pos: 5 }`.
+
+If transforming `%%POS%%` or `%%POSINT%%` values before sending is desired (e.g., the endpoint uses a different numerical scheme), `map_send_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be used to pre-parse the value instead of the default HomeKit 0-100 values.
+
+So, `map_send_jsonata` could be set to a custom expression like `$round( ( 100 - $number($) ) * 255 / 100 )` where `$` represents the target position value.
+The [JSONata Exerciser](https://try.jsonata.org/) can be a helpful tool for developing custom expressions.
+
 #### Receiving specific position (optional, ad hoc basis)
 
 If the following parameters are defined, the position can be updated using a webhook. At a minimum, `webhook_port` must be defined. `webhook_http_auth_user` / `webhook_http_auth_pass` are used for basic authentication. If `webhook_https` is true, then an SSL connection is used instead. If `webhook_https_keyfile` / `webhook_https_keyfile` are not defined, a self-signed certificate will be used instead.
@@ -173,8 +181,6 @@ This implementation does take into account whether or not the blinds are moving,
       "webhook_https_certfile": "/path/to/https.crt",
 ```
 
-**NOTE**: For HTTPS users, there is a pending PR for self-signed certificates, which can cause the `ee key too small` error. See: [selfsigned](https://github.com/jfromaniello/selfsigned/pull/35).
-
 #### Receiving specific position (optional, ongoing basis)
 
 `position_url` must report the current state of the blinds as an integer (0-100) in either plain text or JSON format, e.g. `{"current_position": 40}`. If JSON is used, JSON keys are filtered to look for a **single** numeric response, but the JSON handling is not very robust and will cause unexpected results if multiple numeric keys are present.
@@ -182,8 +188,6 @@ This implementation does take into account whether or not the blinds are moving,
 `position_url` defaults to a simple GET request, ignoring headers or other methods specified in `http_options`. If more robust handling is required, `position_url` can be defined as a complete `request`/`requestretry` object as specified in `Advanced URL` above.
 
 If more robust handling of `position_url` responses in JSON format is needed, `position_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be set to parse the result. For example, considering the following JSON response:
-
-`position_interval` is specified in ms, and defaults to 15000 ms (15 s). It can be used to set the polling frequency, particularly useful in cases where the blinds can also be controlled externally.
 
 ```json
 {
@@ -206,6 +210,8 @@ Also, note that if the returned value is not in JSON format, `$` can be used in 
 The [JSONata Exerciser](https://try.jsonata.org/) can be a helpful tool for developing custom expressions.
 
 Ensure that the motion time is configured properly, even when `position_url` is set, as it is used to obtain an estimate of blind position to avoid multiple web requests to the `position_url`. (After the estimated position is reached, the position will be confirmed).
+
+`position_interval` is specified in ms, and defaults to 15000 ms (15 s). It can be used to set the polling frequency, particularly useful in cases where the blinds can also be controlled externally.
 
 ### Motion Time and Calibration
 
