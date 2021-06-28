@@ -334,19 +334,25 @@ BlindsHTTPAccessory.prototype.getTargetPosition = function (callback) {
 };
 
 BlindsHTTPAccessory.prototype.replaceUrlPosition = function (url, pos) {
-    const exp = RegExp('%%POS%%', 'g');
+    const exp = RegExp('%%POS%%|"%%POSINT%%"', 'g');
 
     if (typeof url.valueOf() === 'string') {
         return exp.test(url) ? url.replace(exp, pos) : false;
     }
 
     if (Object.prototype.hasOwnProperty.call(url, 'url') && typeof url.url.valueOf() === 'string') {
-        if (!exp.test(url.url)) {
-            return false;
+        let shallowObj = Object.assign({}, url);
+
+        shallowObj.url = shallowObj.url.replace(exp, pos);
+
+        if (shallowObj.body) {
+            if (typeof shallowObj.body === 'string') {
+                shallowObj.body = shallowObj.body.replace(exp, pos);
+            } else {
+                shallowObj.body = JSON.parse(JSON.stringify(shallowObj.body).replace(exp, pos));
+            }
         }
 
-        let shallowObj = Object.assign({}, url);
-        shallowObj.url = shallowObj.url.replace(exp, pos);
         return shallowObj;
     } else {
         this.log.error(`Missing url property or non-string property for: ${url}`);
