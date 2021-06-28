@@ -79,6 +79,13 @@
                 "placeholder": "http://1.2.3.4/window/position",
                 "format": "uri"
             },
+            "position_interval": {
+                "title": "Polling interval for Position URL",
+                "type": "integer",
+                "description": "Milliseconds between polling requests to position URL",
+                "minimum": 5000,
+                "placeholder": 15000
+            },
             "position_jsonata": {
                 "title": "Jsonata for Position URL",
                 "type": "string",

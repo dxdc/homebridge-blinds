@@ -45,6 +45,7 @@ function BlindsHTTPAccessory(log, config) {
             this.log.error(`Error parsing jsonata: ${err.message}`);
         }
     }
+    this.positionPollInterval = Math.max(parseInt(config.position_interval, 10) || 15000, 5000);
     this.stopURL = config.stop_url || false;
     this.httpOptions = config.http_options || config.http_method || { method: 'POST' };
     this.successCodes = config.success_codes || [200];
@@ -93,13 +94,13 @@ function BlindsHTTPAccessory(log, config) {
     this.lastCommandMoveUp = this.currentTargetPosition % 100 > 0 ? null : this.currentTargetPosition === 100;
 
     if (this.positionURL) {
-        this.getCurrentPosition(
+        this.updatePositionByUrl();
+
+        this.pollInterval = setInterval(
             function () {
-                this.currentTargetPosition = this.lastPosition;
-                if (this.currentTargetPosition % 100 === 0) {
-                    this.lastCommandMoveUp = this.currentTargetPosition === 100;
-                }
+                this.updatePositionByUrl();
             }.bind(this),
+            this.positionPollInterval,
         );
     }
 
@@ -324,6 +325,31 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function (callback) {
             return callback(null);
         }.bind(this),
     );
+};
+
+BlindsHTTPAccessory.prototype.updatePositionByUrl = function () {
+    if (this.stopTimeout !== null || this.stepInterval !== null || this.lagTimeout !== null) {
+        if (this.verbose) {
+            this.log.info(
+                `Polling skipped (updatePositionByUrl); stopTimeout: ${this.stopTimeout}, stepInterval: ${this.stepInterval}, lagTimeout: ${this.lagTimeout}`,
+            );
+        }
+        return; // blinds in motion by plugin
+    }
+
+    if (this.verbose) {
+        this.log.info('Polling started (updatePositionByUrl)');
+    }
+
+    this.getCurrentPosition(function () {
+        this.currentTargetPosition = this.lastPosition;
+        if (this.currentTargetPosition % 100 === 0) {
+            this.lastCommandMoveUp = this.currentTargetPosition === 100;
+        }
+        if (this.verbose) {
+            this.log.info('Polling finished (updatePositionByUrl)');
+        }
+    }).bind(this);
 };
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function (callback) {

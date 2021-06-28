@@ -59,6 +59,7 @@ Add the accessory in `config.json` in your home directory inside `.homebridge`.
     "up_url": "http://1.2.3.4/window/up",
     "down_url": "http://1.2.3.4/window/down",
     "position_url": "http://1.2.3.4/window/position",
+    "position_interval": 15000,
     "position_jsonata": "ShutterPosition1",
     "stop_url": "http://1.2.3.4/window/stop",
     "http_options": {
@@ -181,6 +182,8 @@ This implementation does take into account whether or not the blinds are moving,
 `position_url` defaults to a simple GET request, ignoring headers or other methods specified in `http_options`. If more robust handling is required, `position_url` can be defined as a complete `request`/`requestretry` object as specified in `Advanced URL` above.
 
 If more robust handling of `position_url` responses in JSON format is needed, `position_jsonata` can be defined. This allows a [JSONata](https://jsonata.org/) expression to be set to parse the result. For example, considering the following JSON response:
+
+`position_interval` is specified in ms, and defaults to 15000 ms (15 s). It can be used to set the polling frequency, particularly useful in cases where the blinds can also be controlled externally.
 
 ```json
 {
