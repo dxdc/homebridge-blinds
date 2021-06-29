@@ -351,15 +351,17 @@ BlindsHTTPAccessory.prototype.updatePositionByUrl = function () {
         this.log.info('Polling started (updatePositionByUrl)');
     }
 
-    this.getCurrentPosition(function () {
-        this.currentTargetPosition = this.lastPosition;
-        if (this.currentTargetPosition % 100 === 0) {
-            this.lastCommandMoveUp = this.currentTargetPosition === 100;
-        }
-        if (this.verbose) {
-            this.log.info('Polling finished (updatePositionByUrl)');
-        }
-    }).bind(this);
+    this.getCurrentPosition(
+        function () {
+            this.currentTargetPosition = this.lastPosition;
+            if (this.currentTargetPosition % 100 === 0) {
+                this.lastCommandMoveUp = this.currentTargetPosition === 100;
+            }
+            if (this.verbose) {
+                this.log.info('Polling finished (updatePositionByUrl)');
+            }
+        }.bind(this),
+    );
 };
 
 BlindsHTTPAccessory.prototype.getTargetPosition = function (callback) {
