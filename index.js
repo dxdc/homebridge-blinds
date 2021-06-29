@@ -404,18 +404,14 @@ BlindsHTTPAccessory.prototype.replaceUrlPosition = function (url, pos) {
 };
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
-    if (this.stopTimeout !== null) {
-        clearTimeout(this.stopTimeout);
-        this.stopTimeout = null;
-    }
-    if (this.stepInterval !== null) {
-        clearInterval(this.stepInterval);
-        this.stepInterval = null;
-    }
-    if (this.lagTimeout !== null) {
-        clearTimeout(this.lagTimeout);
-        this.lagTimeout = null;
-    }
+    clearTimeout(this.stopTimeout);
+    this.stopTimeout = null;
+
+    clearInterval(this.stepInterval);
+    this.stepInterval = null;
+
+    clearTimeout(this.lagTimeout);
+    this.lagTimeout = null;
 
     this.manualStop = false;
     this.currentTargetPosition = pos;
@@ -573,6 +569,8 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
 BlindsHTTPAccessory.prototype.endMoveRequest = function (moveMessage) {
     clearInterval(this.stepInterval);
     this.stepInterval = null;
+    clearTimeout(this.lagTimeout);
+    this.lagTimeout = null;
 
     this.log.info(`End ${moveMessage} to ${this.lastPosition}% (target ${this.currentTargetPosition}%)`);
 
@@ -588,12 +586,11 @@ BlindsHTTPAccessory.prototype.endMoveRequest = function (moveMessage) {
 
 BlindsHTTPAccessory.prototype.sendStopRequest = function (targetService, on, callback) {
     if (on) {
+        clearTimeout(this.stopTimeout);
+        this.stopTimeout = null;
+
         if (targetService) {
             this.log.info('Requesting manual stop');
-            if (this.stopTimeout !== null) {
-                clearTimeout(this.stopTimeout);
-                this.stopTimeout = null;
-            }
         } else {
             this.log.info('Requesting stop');
         }
