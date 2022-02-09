@@ -311,7 +311,7 @@ BlindsHTTPAccessory.prototype.setCurrentPositionByUrl = function (callback) {
             try {
                 const json = JSON.parse(body);
                 if (this.positionJsonata) {
-                    body = this.positionJsonata.evaluate(body);
+                    body = this.positionJsonata.evaluate(json);
                 } else if (typeof json === 'object') {
                     body = Object.values(json).filter(function (val) {
                         return !isNaN(val);
