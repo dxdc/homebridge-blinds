@@ -301,7 +301,7 @@ I try to reply to everyone needing help using these projects. Obviously, this ta
 
 ## Specific configurations by manufacturer:
 
-### Bond
+### Bond and Bond Bridge Pro
 
 -   [Product Link](https://bondhome.io/)
 -   [Homebridge-Bond](https://github.com/aarons22/homebridge-bond)
@@ -310,6 +310,8 @@ I try to reply to everyone needing help using these projects. Obviously, this ta
 Sample `config.json`, noting that you need to replace `1.2.3.4` with your Bond IP address, `<deviceId>` with your deviceId, and `<BondToken>` with your Bond token.
 
 These values can be obtained from the Bond app, under `Device settings` for any individual shades.
+
+#### Bond Configuration
 
 ```json
 {
@@ -329,6 +331,57 @@ These values can be obtained from the Bond app, under `Device settings` for any 
     "motion_time": 11000,
     "response_lag": 1000,
     "trigger_stop_at_boundaries": false
+}
+```
+
+#### Bond Bridge Pro Configuration (supports SetPosition)
+
+Bond Bridge Pro supports the `SetPosition` command, which allows for finer-tuned control. Note that Bond's convention for 0-100% is exactly opposite of HomeKit's convention, so Jsonata was used to remap the values.
+
+```json
+{
+    "accessory": "BlindsHTTP",
+    "name": "Dining Room Shades",
+    "up_url": {
+        "url": "http://1.2.3.4/v2/devices/36ecfde3/actions/SetPosition",
+        "body": "{\"argument\": %%POS%%}",
+        "headers": {
+            "BOND-Token": "<BondToken>"
+        },
+        "method": "PUT"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/v2/devices/36ecfde3/actions/SetPosition",
+        "body": "{\"argument\": %%POS%%}",
+        "headers": {
+            "BOND-Token": "<BondToken>"
+        },
+        "method": "PUT"
+    },
+    "position_url": {
+        "url": "http://1.2.3.4/v2/devices/36ecfde3/state",
+        "headers": {
+            "BOND-Token": "<BondToken>"
+        },
+        "method": "GET"
+    },
+    "position_interval": 15000,
+    "position_jsonata": "$round( 100 - $number(position) )",
+    "map_send_jsonata": "$round( 100 - $number($) )",
+    "stop_url": {
+        "url": "http://1.2.3.4/v2/devices/36ecfde3/actions/Hold",
+        "body": "{}",
+        "headers": {
+            "BOND-Token": "<BondToken>"
+        },
+        "method": "PUT"
+    },
+    "motion_time": 24000,
+    "response_lag": 1000,
+    "success_codes": [
+        200, 204
+    ],
+    "verbose": true
 }
 ```
 
