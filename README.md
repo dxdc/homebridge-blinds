@@ -325,7 +325,7 @@ These values can be obtained from the Bond app, under `Device settings` for any 
         },
         "method": "PUT"
     },
-    "success_codes": [204],
+    "success_codes": [200, 204],
     "motion_time": 11000,
     "response_lag": 1000,
     "trigger_stop_at_boundaries": false
