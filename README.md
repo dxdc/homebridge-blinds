@@ -334,9 +334,21 @@ These values can be obtained from the Bond app, under `Device settings` for any 
 }
 ```
 
-#### Bond Bridge Pro Configuration (supports SetPosition)
+If you prefer instead, you can trigger Groups instead of individual devices. The groups need to be configured within the Bond app itself. To use a group, just replace the `devices/<deviceId>` in all of the URLs with `groups/<groupId>`.
 
-Bond Bridge Pro supports the `SetPosition` command, which allows for finer-tuned control. Note that Bond's convention for 0-100% is exactly opposite of HomeKit's convention, so Jsonata was used to remap the values.
+E.g.,
+
+```json
+    "up_url": "http://1.2.3.4/v2/groups/<groupId>/actions/Open",
+    "down_url": "http://1.2.3.4/v2/groups/<groupId>/actions/Close",
+    "stop_url": "http://1.2.3.4/v2/groups/<groupId>/actions/Hold",
+```
+
+This applies for the `Pro` configuration as well.
+
+#### Bond Bridge Pro Configuration
+
+Bond Bridge Pro supports the `SetPosition` command, which allows for finer-tuned control. Note that Bond's convention for 0-100% is exactly opposite of HomeKit's convention, so JSONata was used to remap the values.
 
 ```json
 {
