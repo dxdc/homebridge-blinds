@@ -378,9 +378,7 @@ Bond Bridge Pro supports the `SetPosition` command, which allows for finer-tuned
     },
     "motion_time": 24000,
     "response_lag": 1000,
-    "success_codes": [
-        200, 204
-    ],
+    "success_codes": [200, 204],
     "verbose": true
 }
 ```
