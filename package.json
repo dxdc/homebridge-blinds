@@ -36,7 +36,7 @@
     "jsonata": "^1.8.6",
     "node-persist": "^2.1.0",
     "request": "^2.88.2",
-    "requestretry": "^4.1.2",
+    "requestretry": "^7.0.1",
     "selfsigned": "^1.10.11"
   },
   "devDependencies": {
