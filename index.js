@@ -382,25 +382,34 @@ BlindsHTTPAccessory.prototype.replaceUrlPosition = function (url, pos) {
         return exp.test(url) ? url.replace(exp, pos) : false;
     }
 
-    if (Object.prototype.hasOwnProperty.call(url, 'url') && typeof url.url.valueOf() === 'string') {
-        let shallowObj = Object.assign({}, url);
-
-        shallowObj.url = shallowObj.url.replace(exp, pos);
-
-        if (shallowObj.body) {
-            if (typeof shallowObj.body === 'string') {
-                shallowObj.body = shallowObj.body.replace(exp, pos);
-            } else {
-                shallowObj.body = JSON.parse(JSON.stringify(shallowObj.body).replace(exp, pos));
-            }
-        }
-
-        return shallowObj;
-    } else {
+    if (!Object.prototype.hasOwnProperty.call(url, 'url') || typeof url.url.valueOf() !== 'string') {
         this.log.error(`Missing url property or non-string property for: ${url}`);
+        return false;
     }
 
-    return false;
+    let shallowObj = Object.assign({}, url);
+    const exactPosUrl = exp.test(shallowObj.url);
+    if (exactPosUrl) {
+        shallowObj.url = shallowObj.url.replace(exp, pos);
+    }
+
+    let exactPosBody = false;
+    if (shallowObj.body) {
+        if (typeof shallowObj.body === 'string') {
+            exactPosBody = exp.test(shallowObj.body);
+            if (exactPosBody) {
+                shallowObj.body = shallowObj.body.replace(exp, pos);
+            }
+        } else {
+            const body = JSON.stringify(shallowObj.body);
+            exactPosBody = exp.test(body);
+            if (exactPosBody) {
+                shallowObj.body = JSON.parse(body.replace(exp, pos));
+            }
+        }
+    }
+
+    return exactPosUrl || exactPosBody ? shallowObj : false;
 };
 
 BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
