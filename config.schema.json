@@ -11,34 +11,8 @@
                 "type": "string",
                 "required": true
             },
-            "up_url": {
-                "title": "Up URL",
-                "type": "string",
-                "description": "URL to send the UP command",
-                "placeholder": "http://1.2.3.4/window/up",
-                "format": "uri"
-            },
-            "motion_up_time": {
-                "title": "Motion Upward Time",
-                "type": "integer",
-                "placeholder": 10000,
-                "minimum": 1,
-                "description": "Overrides default motion time (in milliseconds)"
-            },
-            "down_url": {
-                "title": "Down URL",
-                "type": "string",
-                "description": "URL to send the DOWN command",
-                "placeholder": "http://1.2.3.4/window/down",
-                "format": "uri"
-            },
-            "motion_down_time": {
-                "title": "Motion Downward Time",
-                "type": "integer",
-                "placeholder": 10000,
-                "minimum": 1,
-                "description": "Overrides default motion time (in milliseconds)"
-            },
+            "up_url": { "$ref": "#/$defs/http_options" },
+            "down_url": { "$ref": "#/$defs/http_options" },
             "motion_time": {
                 "title": "Motion Time",
                 "type": "integer",
@@ -46,18 +20,25 @@
                 "minimum": 1,
                 "description": "Milliseconds for blinds to move completely up or down"
             },
+            "motion_time_graph": {
+                "title": "Motion Time Mapping (optional)",
+                "type": "object",
+                "expandable": true,
+                "properties": {
+                    "up": {
+                        "$ref": "#/$defs/motion_graph_entry"
+                    },
+                    "down": {
+                        "$ref": "#/$defs/motion_graph_entry"
+                    }
+                },
+                "description": "Overrides default motion time using a mapping of blind position as a function of seconds. For instance: @ 0.0 seconds, pos = 0; @ 9.7 seconds, pos = 50; @ 14.3 seconds, pos = 100. Minimally, add a time for position = 0 and position = 100."
+            },
             "show_toggle_button": {
-                "title": "Show Toggle Button",
-                "type": "boolean",
-                "description": "Exposes a toggle (up/down) button"
+                "title": "Show Toggle (up/down) Button",
+                "type": "boolean"
             },
-            "stop_url": {
-                "title": "Stop URL",
-                "type": "string",
-                "description": "URL to send the STOP command",
-                "placeholder": "http://1.2.3.4/window/stop",
-                "format": "uri"
-            },
+            "stop_url": { "$ref": "#/$defs/http_options" },
             "use_same_url_for_stop": {
                 "title": "Use Same URL for Stop",
                 "type": "boolean",
@@ -72,72 +53,42 @@
                 "type": "boolean",
                 "description": "Only needed if blinds do not stop automatically"
             },
-            "position_url": {
+            "pos_url": {
                 "title": "Position URL",
                 "type": "string",
                 "description": "URL to get the current blinds position (must be 0-100 response)",
                 "placeholder": "http://1.2.3.4/window/position",
                 "format": "uri"
             },
-            "position_interval": {
+            "pos_poll_ms": {
                 "title": "Polling interval for Position URL",
                 "type": "integer",
                 "description": "Milliseconds between polling requests to position URL",
                 "minimum": 5000,
                 "placeholder": 15000
             },
-            "position_jsonata": {
+            "pos_jsonata": {
                 "title": "JSONata for Position URL",
                 "type": "string",
                 "description": "Expression to parse position URL response",
                 "placeholder": "ShutterPosition1"
             },
-            "map_send_jsonata": {
+            "send_pos_jsonata": {
                 "title": "JSONata for Target Position",
                 "type": "string",
                 "description": "Expression to map target position (optional)",
                 "placeholder": "$round( ( 100 - $number($) ) * 255 / 100 )"
             },
-            "http_options": {
-                "notitle": true,
-                "type": "object",
-                "properties": {
-                    "method": {
-                        "title": "HTTP Method",
-                        "type": "string",
-                        "placeholder": "POST",
-                        "typeahead": {
-                            "source": ["GET", "POST", "PUT"]
-                        }
-                    },
-                    "headers": {
-                        "notitle": true,
-                        "type": "object",
-                        "properties": {
-                            "Authorization": {
-                                "type": "string"
-                            },
-                            "BOND-Token": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "body": {
-                        "title": "HTTP Body",
-                        "type": "string"
-                    }
-                }
-            },
-            "response_lag": {
+            "response_lag_ms": {
                 "title": "Response Lag",
                 "type": "integer",
                 "placeholder": 0,
                 "minimum": 0,
                 "description": "Milliseconds for device to respond after HTTP request. Improves accuracy for non-boundary positions due to network or motor lag."
             },
-            "success_codes": {
-                "notitle": true,
+            "http_success_codes": {
                 "type": "array",
+                "notitle": true,
                 "uniqueItems": true,
                 "displayFlex": true,
                 "flex-direction": "row",
@@ -146,20 +97,6 @@
                     "placeholder": 200,
                     "minimum": 1
                 }
-            },
-            "max_http_attempts": {
-                "title": "Maximum HTTP attempts",
-                "type": "integer",
-                "placeholder": 5,
-                "minimum": 1,
-                "description": "Maximum number of HTTP attempts (on error or timeout) per request"
-            },
-            "retry_delay": {
-                "title": "Wait between HTTP attempts",
-                "type": "integer",
-                "placeholder": 2000,
-                "minimum": 0,
-                "description": "Milliseconds between HTTP retries"
             },
             "webhook_port": {
                 "title": "Port",
@@ -190,63 +127,105 @@
             "unique_serial": {
                 "title": "Unique serial",
                 "type": "boolean",
-                "description": "Uuid-based serial/model number instead of default 'BlindsHTTPAccessory'"
+                "description": "UUID-based serial/model number instead of default 'BlindsHTTPAccessory'"
             },
             "verbose": {
                 "title": "Verbose logging",
-                "type": "boolean",
-                "description": "Show getTargetPosition / getTargetState / getCurrentPosition requests"
+                "type": "boolean"
+            }
+        },
+        "$defs": {
+            "motion_graph_entry": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "pos": {
+                            "title": "Position (0 = closed, 100 = open)",
+                            "type": "integer",
+                            "placeholder": 0,
+                            "minimum": 0,
+                            "maximum": 100,
+                            "required": true
+                        },
+                        "seconds": {
+                            "title": "Seconds",
+                            "type": "number",
+                            "minimum": 0,
+                            "placeholder": 0.0,
+                            "required": true
+                        }
+                    }
+                }
+            },
+            "http_options": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "title": "URL",
+                        "type": "string",
+                        "placeholder": "http://1.2.3.4/window/cmnd",
+                        "format": "uri"
+                    },
+                    "method": {
+                        "title": "HTTP Method",
+                        "type": "string",
+                        "placeholder": "POST",
+                        "oneOf": [
+                            { "title": "GET", "type": "string" },
+                            { "title": "POST", "type": "string" },
+                            { "title": "PUT", "type": "string" },
+                            { "title": "PATCH", "type": "string" },
+                            { "title": "DELETE", "type": "string" }
+                        ],
+                        "typeahead": {
+                            "source": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+                        }
+                    },
+                    "headers": {
+                        "type": "object",
+                        "title": "Headers",
+                        "properties": {
+                            "Authorization": {
+                                "type": "string"
+                            },
+                            "BOND-Token": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "body": {
+                        "title": "HTTP Body",
+                        "type": "string"
+                    },
+                    "maxAttempts": {
+                        "title": "Maximum HTTP attempts",
+                        "type": "integer",
+                        "minimum": 1,
+                        "placeholder": 5
+                    },
+                    "retryDelay": {
+                        "title": "Delay (ms) between HTTP attempts",
+                        "type": "integer",
+                        "minimum": 0,
+                        "placeholder": 2000
+                    }
+                }
             }
         }
     },
     "layout": [
         "name",
         {
-            "title": "HTTP Configuration",
-            "description": "<i>for UP/DOWN/STOP URLs</i>",
+            "title": "HTTP Success Codes",
+            "description": "List of HTTP codes indicating a successful API request (200, 204, etc.)",
             "expandable": true,
             "type": "fieldset",
             "items": [
                 {
-                    "type": "help",
-                    "helpvalue": "<em class='text-primary'>If a more advanced configuration is desired, see documentation. Each url parameter can be customized as a complete HTTP object.</em>"
-                },
-                "http_options",
-                {
-                    "type": "fieldset",
-                    "items": [
-                        {
-                            "key": "http_options.method"
-                        },
-                        {
-                            "type": "help",
-                            "helpvalue": "Headers:"
-                        },
-                        "http_options.headers.Authorization",
-                        "http_options.headers.BOND-Token",
-                        {
-                            "key": "http_options.body"
-                        },
-                        {
-                            "type": "help",
-                            "helpvalue": "HTTP Success Codes"
-                        },
-                        {
-                            "key": "success_codes",
-                            "items": [
-                                {
-                                    "key": "success_codes[]"
-                                }
-                            ]
-                        },
-                        {
-                            "title": "HTTP Retries",
-                            "description": "<i>for failed HTTP requests</i>",
-                            "type": "fieldset",
-                            "expandable": true,
-                            "items": ["max_http_attempts", "retry_delay"]
-                        }
-                    ]
+                    "type": "array",
+                    "items": ["http_success_codes[]"],
+                    "minItems": 1
                 }
             ]
         },
@@ -257,15 +236,40 @@
             "items": [
                 {
                     "type": "help",
-                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target. The Stop URL will not be sent if <span class='text-info'>%%POS%%</span> is used (because the blinds can receive a specific position, there is no need to send an additional stop command).</p>"
+                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target.</p>"
                 },
-                "up_url",
+                "up_url.url",
+                "up_url.method",
                 {
-                    "key": "motion_up_time",
+                    "key": "up_url.body",
                     "condition": {
-                        "functionBody": "return model.motion_up_time || model.up_url"
+                        "functionBody": "return model.up_url?.method && model.up_url.method !== 'GET'"
                     }
-                }
+                },
+                {
+                    "type": "fieldset",
+                    "title": "Headers",
+                    "expandable": false,
+                    "items": [
+                        {
+                            "type": "div",
+                            "displayFlex": true,
+                            "flex-direction": "row",
+                            "items": [
+                                {
+                                    "key": "up_url.headers.Authorization",
+                                    "flex": "1 1 50px"
+                                },
+                                {
+                                    "key": "up_url.headers.BOND-Token",
+                                    "flex": "1 1 50px"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "up_url.maxAttempts",
+                "up_url.retryDelay"
             ]
         },
         {
@@ -275,15 +279,40 @@
             "items": [
                 {
                     "type": "help",
-                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target. The Stop URL will not be sent if <span class='text-info'>%%POS%%</span> is used (because the blinds can receive a specific position, there is no need to send an additional stop command).</p>"
+                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target.</p>"
                 },
-                "down_url",
+                "down_url.url",
+                "down_url.method",
                 {
-                    "key": "motion_down_time",
+                    "key": "down_url.body",
                     "condition": {
-                        "functionBody": "return model.motion_down_time || model.down_url"
+                        "functionBody": "return model.down_url?.method && model.down_url.method !== 'GET'"
                     }
-                }
+                },
+                {
+                    "type": "fieldset",
+                    "title": "Headers",
+                    "expandable": false,
+                    "items": [
+                        {
+                            "type": "div",
+                            "displayFlex": true,
+                            "flex-direction": "row",
+                            "items": [
+                                {
+                                    "key": "down_url.headers.Authorization",
+                                    "flex": "1 1 50px"
+                                },
+                                {
+                                    "key": "down_url.headers.BOND-Token",
+                                    "flex": "1 1 50px"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "down_url.maxAttempts",
+                "down_url.retryDelay"
             ]
         },
         {
@@ -291,7 +320,38 @@
             "expandable": true,
             "type": "fieldset",
             "items": [
-                "stop_url",
+                "stop_url.url",
+                "stop_url.method",
+                {
+                    "key": "stop_url.body",
+                    "condition": {
+                        "functionBody": "return model.stop_url?.method && model.stop_url.method !== 'GET'"
+                    }
+                },
+                {
+                    "type": "fieldset",
+                    "title": "Headers",
+                    "expandable": false,
+                    "items": [
+                        {
+                            "type": "div",
+                            "displayFlex": true,
+                            "flex-direction": "row",
+                            "items": [
+                                {
+                                    "key": "stop_url.headers.Authorization",
+                                    "flex": "1 1 50px"
+                                },
+                                {
+                                    "key": "stop_url.headers.BOND-Token",
+                                    "flex": "1 1 50px"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "stop_url.maxAttempts",
+                "stop_url.retryDelay",
                 {
                     "type": "flex",
                     "flex-flow": "row wrap",
@@ -299,13 +359,13 @@
                         {
                             "key": "trigger_stop_at_boundaries",
                             "condition": {
-                                "functionBody": "return model.trigger_stop_at_boundaries || model.stop_url || model.use_same_url_for_stop"
+                                "functionBody": "return model.trigger_stop_at_boundaries || model.stop_url?.url || model.use_same_url_for_stop"
                             }
                         },
                         {
                             "key": "use_same_url_for_stop",
                             "condition": {
-                                "functionBody": "return model.use_same_url_for_stop || ((model.down_url || model.up_url) && !model.stop_url)"
+                                "functionBody": "return model.use_same_url_for_stop || ((model.down_url?.url || model.up_url?.url) && !model.stop_url.url)"
                             }
                         }
                     ]
@@ -313,11 +373,11 @@
             ]
         },
         {
-            "title": "Map Position values for URL requests",
-            "description": "<i>Map target position specified by %%POS%% to a new value using JSONata.</i>",
+            "title": "Map %%POS%% for URL requests",
+            "description": "<i>Map target position specified by %%POS%% or %%POSINT%%% to a new value using JSONata.</i>",
             "type": "fieldset",
             "expandable": true,
-            "items": ["map_send_jsonata"]
+            "items": ["send_pos_jsonata"]
         },
         {
             "title": "Position URL",
@@ -325,17 +385,17 @@
             "type": "fieldset",
             "expandable": true,
             "items": [
-                "position_url",
+                "pos_url",
                 {
-                    "key": "position_interval",
+                    "key": "pos_poll_ms",
                     "condition": {
-                        "functionBody": "return model.position_interval || model.position_url"
+                        "functionBody": "return model.pos_poll_ms || model.pos_url"
                     }
                 },
                 {
-                    "key": "position_jsonata",
+                    "key": "pos_jsonata",
                     "condition": {
-                        "functionBody": "return model.position_jsonata || model.position_url"
+                        "functionBody": "return model.pos_jsonata || model.pos_url"
                     }
                 }
             ]
@@ -373,7 +433,67 @@
             "description": "<i>Calibrate blind movement times</i>",
             "type": "fieldset",
             "expandable": true,
-            "items": ["motion_time", "response_lag"]
+            "items": [
+                {
+                    "key": "motion_time",
+                    "condition": {
+                        "functionBody": "return !model.motion_time_graph?.up && !model.motion_time_graph?.down"
+                    }
+                },
+                "response_lag_ms",
+                {
+                    "type": "help",
+                    "helpvalue": "<span class='text-info'>motion_time_graph has a higher priority over motion_time. This means, that if these are both explicitly provided in the configuration file, the value set in motion_time will be ignored. A linear rate of change will be assumed between positions and pos = 0 and pos = 100 are required at a minimum.</span>"
+                },
+                {
+                    "key": "motion_time_graph.up",
+                    "type": "array",
+                    "title": "Motion Timing: Up",
+                    "expandable": false,
+                    "items": [
+                        {
+                            "type": "div",
+                            "displayFlex": true,
+                            "flex-direction": "row",
+                            "items": [
+                                {
+                                    "key": "motion_time_graph.up[].pos",
+                                    "flex": "1 1 50px"
+                                },
+                                {
+                                    "key": "motion_time_graph.up[].seconds",
+                                    "flex": "1 1 50px"
+                                }
+                            ],
+                            "minItems": 2
+                        }
+                    ]
+                },
+                {
+                    "key": "motion_time_graph.down",
+                    "type": "array",
+                    "title": "Motion Timing: Down",
+                    "expandable": false,
+                    "items": [
+                        {
+                            "type": "div",
+                            "displayFlex": true,
+                            "flex-direction": "row",
+                            "items": [
+                                {
+                                    "key": "motion_time_graph.down[].pos",
+                                    "flex": "1 1 50px"
+                                },
+                                {
+                                    "key": "motion_time_graph.down[].seconds",
+                                    "flex": "1 1 50px"
+                                }
+                            ],
+                            "minItems": 2
+                        }
+                    ]
+                }
+            ]
         },
         {
             "type": "fieldset",
@@ -387,13 +507,13 @@
                         {
                             "key": "show_toggle_button",
                             "condition": {
-                                "functionBody": "return model.show_toggle_button || (model.up_url && model.down_url)"
+                                "functionBody": "return model.show_toggle_button || (model.up_url?.url && model.down_url?.url)"
                             }
                         },
                         {
                             "key": "show_stop_button",
                             "condition": {
-                                "functionBody": "return model.show_stop_button || model.use_same_url_for_stop || model.stop_url"
+                                "functionBody": "return model.show_stop_button || model.use_same_url_for_stop || model.stop_url?.url"
                             }
                         }
                     ]
@@ -401,7 +521,7 @@
             ]
         },
         {
-            "title": "Additional Options",
+            "title": "Optional Parameters",
             "type": "fieldset",
             "expandable": true,
             "items": ["verbose", "unique_serial"]

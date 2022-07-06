@@ -1,6 +1,8 @@
 'use strict';
 const CERT_DAYS = 365;
 const CERT_VERSION = 2;
+const MS_PER_SECOND = 1000;
+
 const packageJSON = require('./package.json');
 
 const request = require('requestretry');
@@ -35,32 +37,61 @@ function BlindsHTTPAccessory(log, config) {
     // configuration and http vars
     this.name = config.name;
     this.upURL = config.up_url || false;
+    if (typeof this.upURL === 'object' && !this.upURL.url) {
+        this.log.info('No URL found for up_url');
+        this.upURL = false;
+    }
+
     this.downURL = config.down_url || false;
-    this.positionURL = config.position_url || false;
+    if (typeof this.downURL === 'object' && !this.downURL.url) {
+        this.log.info('No URL found for down_url');
+        this.downURL = false;
+    }
+
+    this.positionURL = config.pos_url || config.position_url || false;
     this.positionJsonata = false;
-    if (config.position_jsonata) {
+
+    const positionJsonata = config.pos_jsonata || config.position_jsonata;
+    if (positionJsonata) {
         try {
-            this.positionJsonata = jsonata(config.position_jsonata);
+            this.positionJsonata = jsonata(positionJsonata);
         } catch (err) {
             this.log.error(`Error parsing positionJsonata: ${err.message}`);
         }
     }
-    this.positionPollInterval = Math.max(parseInt(config.position_interval, 10) || 15000, 5000);
+    this.positionPollInterval = Math.max(
+        parseInt(config.pos_poll_ms, 10) || parseInt(config.position_interval, 10) || 15000,
+        5000,
+    );
     this.stopURL = config.stop_url || false;
+    if (typeof this.stopURL === 'object' && !this.stopURL.url) {
+        this.log.info('No URL found for stop_url');
+        this.stopURL = false;
+    }
 
     this.mapSendJsonata = false;
-    if (config.map_send_jsonata) {
+
+    const mapSendJsonata = config.send_pos_jsonata || config.map_send_jsonata;
+    if (mapSendJsonata) {
         try {
-            this.mapSendJsonata = jsonata(config.map_send_jsonata);
+            this.mapSendJsonata = jsonata(mapSendJsonata);
         } catch (err) {
             this.log.error(`Error parsing mapSendJsonata: ${err.message}`);
         }
     }
 
-    this.httpOptions = config.http_options || config.http_method || { method: 'POST' };
-    this.successCodes = config.success_codes || [200];
-    this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5;
-    this.retryDelay = parseInt(config.retry_delay, 10) || 2000;
+    this.successCodes = config.http_success_codes || config.success_codes || [200];
+
+    this.httpOptions = config.http_options || config.http_method || { method: 'POST' }; // deprecated
+    this.maxHttpAttempts = parseInt(config.max_http_attempts, 10) || 5; // deprecated
+    if (this.maxHttpAttempts < 1) {
+        this.maxHttpAttempts = 1;
+    }
+
+    this.retryDelay = parseInt(config.retry_delay, 10) || 2000; // deprecated
+    if (this.retryDelay < 100) {
+        this.retryDelay = 100;
+    }
 
     // webhook vars
     this.webhookPort = parseInt(config.webhook_port, 10) || 0;
@@ -76,9 +107,116 @@ function BlindsHTTPAccessory(log, config) {
 
     // motion time vars
     const motionTimeConfig = parseInt(config.motion_time, 10) || 10000;
-    this.motionUpTime = parseInt(config.motion_up_time, 10) || motionTimeConfig;
-    this.motionDownTime = parseInt(config.motion_down_time, 10) || motionTimeConfig;
-    this.responseLag = parseInt(config.response_lag, 10) || 0;
+    const motionUpTime = parseInt(config.motion_up_time, 10) || motionTimeConfig; // deprecated
+    const motionDownTime = parseInt(config.motion_down_time, 10) || motionTimeConfig; // deprecated
+
+    let motionTimeGraph = config.motion_time_graph;
+    this.motionTimeGraph = motionTimeGraph || {
+        up: [
+            { pos: 0, seconds: 0 },
+            { pos: 100, seconds: motionUpTime / MS_PER_SECOND },
+        ],
+        down: [
+            { pos: 100, seconds: 0 },
+            { pos: 0, seconds: motionDownTime / MS_PER_SECOND },
+        ],
+    };
+
+    for (const direction of ['up', 'down']) {
+        let graph = this.motionTimeGraph[direction];
+
+        if (!graph) {
+            this.log.error(`Motion '${direction}' graph is undefined!`);
+            continue;
+        }
+
+        // sort by position
+        graph.sort((a, b) => a.pos - b.pos);
+
+        // remove invalid positions
+        graph = graph.filter((step) => {
+            if (step.pos < 0 || step.pos > 100) {
+                this.log.error(
+                    `Motion '${direction}' step was skipped (invalid: pos must be between 0-100): ${JSON.stringify(
+                        step,
+                    )}`,
+                );
+                return false;
+            }
+
+            return true;
+        });
+
+        if (graph.length === 0) {
+            this.log.error(`Motion '${direction}' graph has no steps!`);
+            continue;
+        }
+
+        if (graph[0].pos !== 0 || graph[graph.length - 1].pos !== 100) {
+            const availablePos = graph.map((step) => step.pos);
+            this.log.error(
+                `Motion '${direction}' graph is missing definitions for positions 0 and/or 100: (found: ${availablePos})`,
+            );
+            continue;
+        }
+
+        // calculate motionTimeStep
+        for (let i = 1; i < graph.length; i++) {
+            const prevStep = graph[i - 1];
+            const thisStep = graph[i];
+
+            const deltaSeconds = Math.abs(thisStep.seconds - prevStep.seconds);
+            const deltaPos = thisStep.pos - prevStep.pos;
+            if (deltaSeconds > 0 && deltaPos > 0) {
+                thisStep.motionTimeStep = deltaSeconds / deltaPos;
+            } else {
+                this.log.error(
+                    `Motion '${direction}' step was skipped, ${deltaSeconds} seconds from previous step, +${deltaPos} position from previous step: ${JSON.stringify(
+                        thisStep,
+                    )}`,
+                );
+            }
+        }
+    }
+
+    this.responseLag = parseInt(config.response_lag_ms, 10) || parseInt(config.response_lag, 10) || 0;
+
+    const renamedVars = {
+        map_send_jsonata: 'send_pos_jsonata',
+        position_interval: 'pos_poll_ms',
+        position_jsonata: 'pos_jsonata',
+        position_url: 'pos_url',
+        response_lag: 'response_lag_ms',
+        success_codes: 'http_success_codes',
+    };
+
+    for (const key of Object.keys(renamedVars)) {
+        if (config[key]) {
+            this.log.error(
+                `Config parameter '${key}' has been renamed to ${renamedVars[key]}; please update your settings`,
+            );
+        }
+    }
+
+    const deprecatedVars = {
+        up_url: this.upURL && typeof this.upURL !== 'object',
+        down_url: this.downURL && typeof this.downURL !== 'object',
+        stop_url: this.stopURL && typeof this.stopURL !== 'object',
+        http_method: config.http_method,
+        http_options: config.http_options,
+        max_http_attempts: config.max_http_attempts,
+        motion_down_time: config.motion_down_time,
+        motion_up_time: config.motion_up_time,
+        retry_delay: config.retry_delay,
+    };
+
+    for (const key of Object.keys(deprecatedVars)) {
+        if (deprecatedVars[key]) {
+            this.log.error(
+                `Config parameter '${key}' is deprecated; please migrate to the current format (see documentation)`,
+            );
+        }
+    }
 
     // advanced vars
     this.uniqueSerial = config.unique_serial === true;
@@ -467,12 +605,49 @@ BlindsHTTPAccessory.prototype.setTargetPosition = function (pos, callback) {
             }
 
             this.lastCommandMoveUp = moveUp;
-
             this.storage.setItemSync(this.name, this.currentTargetPosition);
-            const motionTime = moveUp ? this.motionUpTime : this.motionDownTime;
-            const motionTimeStep = motionTime / 100;
-            const waitDelay = Math.abs(this.currentTargetPosition - this.lastPosition) * motionTimeStep;
 
+            const calcMotionTime = (startPos, endPos, moveUp) => {
+                if (startPos === endPos) {
+                    if (this.verbose) {
+                        this.log.info(`Nothing to do: ${startPos} is equal to ${endPos}`);
+                    }
+                    return 0;
+                }
+
+                // for simplicity:
+                // standardize the calculation in a single direction
+                const blind = {
+                    steps: moveUp ? this.motionTimeGraph.up : this.motionTimeGraph.down,
+                    current: moveUp ? startPos : endPos,
+                    target: moveUp ? endPos : startPos,
+                };
+
+                // iterate through each time step and compute sum
+                const motionTime = blind.steps
+                    .map((step) => {
+                        if (!step.motionTimeStep || blind.current === blind.target || step.pos <= blind.current) {
+                            return 0;
+                        }
+
+                        const stepTarget = Math.min(step.pos, blind.target);
+                        const stepTime = (stepTarget - blind.current) * step.motionTimeStep * MS_PER_SECOND;
+                        // this.log.debug(`Step time between ${blind.current} and ${stepTarget}: ${stepTime} ms`);
+
+                        blind.current = stepTarget;
+                        return stepTime;
+                    })
+                    .reduce((partialSum, a) => partialSum + a, 0);
+
+                if (this.verbose) {
+                    this.log.info(`Calculated time to move from ${startPos} to ${endPos}: ${motionTime} ms`);
+                }
+
+                return motionTime;
+            };
+
+            const waitDelay = calcMotionTime(this.lastPosition, this.currentTargetPosition, moveUp);
+            const motionTimeStep = waitDelay / Math.abs(this.currentTargetPosition - this.lastPosition); // averaged over the total amount
             this.log.info(
                 `Move request sent (${requestTime} ms), waiting ${Math.round(waitDelay / 100) / 10}s (+ ${
                     Math.round(this.responseLag / 100) / 10
@@ -670,6 +845,12 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
     }
 
     const options = function () {
+        const retryStrategy = {
+            maxAttempts: 5,
+            retryDelay: this.retryDelay,
+            retryStrategy: request.RetryStrategies.HTTPOrNetworkError,
+        };
+
         if (typeof url.valueOf() === 'string') {
             if (methods && typeof methods.valueOf() === 'string') {
                 methods = { method: methods }; // backward compatibility
@@ -677,13 +858,10 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
 
             const urlRetries = {
                 url: url,
-                maxAttempts: this.maxHttpAttempts > 1 ? this.maxHttpAttempts : 1,
-                retryDelay: this.retryDelay > 100 ? this.retryDelay : 100,
-                retryStrategy: request.RetryStrategies.HTTPOrNetworkError,
             };
-            return Object.assign(urlRetries, methods);
+            return Object.assign(urlRetries, retryStrategy, methods);
         } else {
-            return url;
+            return Object.assign(retryStrategy, url);
         }
     }.bind(this);
 
