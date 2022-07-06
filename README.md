@@ -158,9 +158,11 @@ See the [Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Blinds-position) f
 
 `motion_time` is the number of milliseconds for your blinds to move from up to down, and should only include the time the motor is running.
 
+Even if your blinds are reporting its position back to this plugin, this value still needs to be set. It's used to emulate the blind position internally, and calculate the expected duration of movement, thereby more efficiently knowing when the blind _should_ be at the target position and not sending too many HTTP requests to update its current position.
+
 Filming this with your phone is recommended for precision. **NOTE**: If you are performing multiple blind requests simultaneously and are getting network timeouts due to an overloaded API, try using non-identical `motion_time` values (e.g., 9800, 10000, 10200 vs. 10000 for each) it may help.
 
-For cases where `motion_time` varies based on the direction of shutter movement, `motion_time_graph` can be used for more fine-tuning. Setting `response_lag_ms` accounts for network or Rf-based delays. See the [Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Motion-time).
+For cases where `motion_time` varies based on the direction of shutter movement, `motion_time_graph` can be used for more fine-tuning. Setting `response_lag_ms` accounts for network or RF-based delays. See the [Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Motion-time).
 
 ### Optional parameters
 
