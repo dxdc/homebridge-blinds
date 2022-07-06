@@ -845,8 +845,8 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
     }
 
     const options = function () {
-        const retryStrategy = {
-            maxAttempts: 5,
+        const urlRetries = {
+            maxAttempts: this.maxHttpAttempts,
             retryDelay: this.retryDelay,
             retryStrategy: request.RetryStrategies.HTTPOrNetworkError,
         };
@@ -856,12 +856,15 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
                 methods = { method: methods }; // backward compatibility
             }
 
-            const urlRetries = {
-                url: url,
-            };
-            return Object.assign(urlRetries, retryStrategy, methods);
+            return Object.assign(
+                {
+                    url: url,
+                },
+                urlRetries,
+                methods,
+            );
         } else {
-            return Object.assign(retryStrategy, url);
+            return Object.assign(urlRetries, url);
         }
     }.bind(this);
 
@@ -913,11 +916,7 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
 
             if (!err && response && this.successCodes.includes(response.statusCode)) {
                 if (response.attempts > 1 || this.verbose) {
-                    this.log.info(
-                        `Request succeeded in ${requestTime} ms after ${response.attempts} / ${
-                            this.maxHttpAttempts
-                        } attempt${this.maxHttpAttempts > 1 ? 's' : ''}`,
-                    );
+                    this.log.info(`Request succeeded in ${requestTime} ms after ${response.attempts} attempt(s)`);
                 }
 
                 if (this.verbose) {
@@ -932,9 +931,7 @@ BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
                     }): ${err}`,
                 );
                 this.log.error(
-                    `${response ? response.attempts : this.maxHttpAttempts} / ${this.maxHttpAttempts} attempt${
-                        this.maxHttpAttempts > 1 ? 's' : ''
-                    } failed after ${requestTime} ms`,
+                    `${response ? response.attempts : 'undefined'} attempt(s) failed after ${requestTime} ms`,
                 );
                 this.log.error(`Body: ${body}`);
 
