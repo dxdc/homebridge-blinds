@@ -104,6 +104,10 @@ function BlindsHTTPAccessory(log, config) {
     // expose additional button vars
     this.showStopButton = config.show_stop_button === true;
     this.showToggleButton = config.show_toggle_button === true;
+    this.showFavoriteButtons = config.show_favorite_buttons || [];
+    this.showFavoriteButtons = new Set(
+        this.showFavoriteButtons.filter((val) => Number.isInteger(val) && val >= 0 && val <= 100),
+    );
 
     // motion time vars
     const motionTimeConfig = parseInt(config.motion_time, 10) || 10000;
@@ -839,6 +843,26 @@ BlindsHTTPAccessory.prototype.sendToggleRequest = function (targetService, on, c
     }
 };
 
+BlindsHTTPAccessory.prototype.sendFavoriteRequest = function (targetService, favoritePos, on, callback) {
+    if (on) {
+        if (targetService) {
+            this.log.info(`Requesting favorite position: ${favoritePos}`);
+            this.service.setCharacteristic(Characteristic.TargetPosition, favoritePos);
+
+            setTimeout(
+                function () {
+                    targetService.getCharacteristic(Characteristic.On).updateValue(false);
+                }.bind(this),
+                1000,
+            );
+        }
+    }
+
+    if (targetService) {
+        return callback(null);
+    }
+};
+
 BlindsHTTPAccessory.prototype.httpRequest = function (url, methods, callback) {
     if (!url) {
         return callback(null, null);
@@ -964,17 +988,26 @@ BlindsHTTPAccessory.prototype.getServices = function () {
     this.services.push(this.service);
 
     if (this.showStopButton && (this.stopURL || this.useSameUrlForStop)) {
-        const stopService = new Service.Switch(this.name + ' Stop', 'stop');
+        const stopService = new Service.Switch(`${this.name} Stop`, 'stop');
         stopService.getCharacteristic(Characteristic.On).on('set', this.sendStopRequest.bind(this, stopService));
 
         this.services.push(stopService);
     }
 
     if (this.showToggleButton) {
-        const toggleService = new Service.Switch(this.name + ' Toggle', 'toggle');
+        const toggleService = new Service.Switch(`${this.name} Toggle`, 'toggle');
         toggleService.getCharacteristic(Characteristic.On).on('set', this.sendToggleRequest.bind(this, toggleService));
 
         this.services.push(toggleService);
+    }
+
+    for (const favoritePos of this.showFavoriteButtons) {
+        const favoriteService = new Service.Switch(`${this.name} ${favoritePos}% Shortcut`, `favorite_${favoritePos}`);
+        favoriteService
+            .getCharacteristic(Characteristic.On)
+            .on('set', this.sendFavoriteRequest.bind(this, favoriteService, favoritePos));
+
+        this.services.push(favoriteService);
     }
 
     return this.services;

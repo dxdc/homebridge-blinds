@@ -98,6 +98,20 @@
                     "minimum": 1
                 }
             },
+            "show_favorite_buttons": {
+                "type": "array",
+                "notitle": true,
+                "uniqueItems": true,
+                "displayFlex": true,
+                "flex-direction": "row",
+                "items": {
+                    "type": "integer",
+                    "title": "Position (0 = closed, 100 = open)",
+                    "placeholder": 50,
+                    "minimum": 0,
+                    "maximum": 100
+                }
+            },
             "webhook_port": {
                 "title": "Port",
                 "type": "integer",
@@ -517,6 +531,10 @@
                             }
                         }
                     ]
+                },
+                {
+                    "type": "array",
+                    "items": ["show_favorite_buttons[]"]
                 }
             ]
         },
