@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/).
 
-## [3.0.0] - Unreleased
+## [3.0.0] - 2026-05-10
 
 > **Drop-in upgrade.** Every working v2 configuration continues to work
 > unchanged. Renamed keys log a one-time deprecation warning so you know
