@@ -1,0 +1,21 @@
+{
+    "_description": "Polls pos_url every 15s to keep HomeKit in sync with the real device position. pos_jsonata extracts the integer position from the JSON response. Without pos_jsonata, the plugin uses the first numeric field of the JSON object.",
+    "accessory": "BlindsHTTP",
+    "name": "Office Shade",
+    "up_url": {
+        "url": "http://1.2.3.4/shade/up",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/shade/down",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/shade/stop",
+        "method": "GET"
+    },
+    "pos_url": "http://1.2.3.4/shade/state",
+    "pos_poll_ms": 15000,
+    "pos_jsonata": "ShutterPosition1",
+    "motion_time": 10000
+}

@@ -1,0 +1,105 @@
+name: Smoke
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  packaged-plugin:
+    name: HB ${{ matrix.homebridge }} / Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+        homebridge: ['1', '2']
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke
+
+      - name: Pack plugin tarball
+        id: pack
+        run: |
+          TARBALL=$(npm pack --silent | tail -n 1)
+          echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
+
+      - name: Boot Homebridge ${{ matrix.homebridge }}.x with packed plugin
+        env:
+          TARBALL: ${{ steps.pack.outputs.tarball }}
+          HB_VERSION: ${{ matrix.homebridge }}
+        run: |
+          set -eo pipefail
+
+          STAGE="$RUNNER_TEMP/hb-stage"
+          mkdir -p "$STAGE"
+          cp "$TARBALL" "$STAGE/plugin.tgz"
+
+          cd "$STAGE"
+          npm init -y > /dev/null
+          if [ "$HB_VERSION" = "1" ]; then
+              npm install --no-audit --no-fund "homebridge@^1.8" "./plugin.tgz"
+          else
+              npm install --no-audit --no-fund "homebridge@>=2.0.0-beta.0" "./plugin.tgz"
+          fi
+
+          mkdir -p "$STAGE/.homebridge"
+          SUFFIX=$(printf '%02X' $((RANDOM % 256)))
+          cat > "$STAGE/.homebridge/config.json" <<EOF
+          {
+              "bridge": {
+                  "name": "Smoke Bridge",
+                  "username": "CC:22:3D:E3:CE:${SUFFIX}",
+                  "port": 51826,
+                  "pin": "031-45-154"
+              },
+              "accessories": [
+                  {
+                      "accessory": "BlindsHTTP",
+                      "name": "Smoke Test Blind",
+                      "up_url": { "url": "http://127.0.0.1:1/up", "method": "GET" },
+                      "down_url": { "url": "http://127.0.0.1:1/down", "method": "GET" },
+                      "stop_url": { "url": "http://127.0.0.1:1/stop", "method": "GET" },
+                      "motion_time": 5000,
+                      "request_timeout_ms": 500,
+                      "max_http_attempts": 1
+                  }
+              ]
+          }
+          EOF
+
+          set +e
+          timeout --signal=SIGTERM --preserve-status 12s \
+              ./node_modules/.bin/homebridge \
+                  --user-storage-path "$STAGE/.homebridge" \
+                  --debug \
+                  > "$STAGE/homebridge.log" 2>&1
+          STATUS=$?
+          set -e
+
+          tail -n 80 "$STAGE/homebridge.log"
+
+          # `timeout` returns 143 on SIGTERM (process was still running, what we want).
+          # Exit 0 means Homebridge bailed early, which is a failure.
+          [ "$STATUS" != "0" ] || { echo "::error::Homebridge exited before timeout"; exit 1; }
+          grep -q "homebridge-blinds" "$STAGE/homebridge.log" || { echo "::error::plugin not loaded"; exit 1; }
+          grep -q "Smoke Test Blind" "$STAGE/homebridge.log" || { echo "::error::accessory not initialized"; exit 1; }

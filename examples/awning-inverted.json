@@ -1,0 +1,19 @@
+{
+    "_description": "Awning or shade whose 'closed' position is physically extended. invert_position swaps the 0%/100% endpoints in HomeKit so the Home app reads naturally.",
+    "accessory": "BlindsHTTP",
+    "name": "Patio Awning",
+    "up_url": {
+        "url": "http://1.2.3.4/awning/retract",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/awning/extend",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/awning/stop",
+        "method": "GET"
+    },
+    "motion_time": 30000,
+    "invert_position": true
+}

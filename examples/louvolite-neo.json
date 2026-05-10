@@ -1,0 +1,19 @@
+{
+    "_description": "Louvolite (Neo Smart Blinds) via the Neo Smart Controller LAN API. Replace {hub_token} with your controller's token and {blind_id} with the blind's identifier (typically a 6-character code). The controller exposes 'up' / 'dn' / 'sp' commands.",
+    "accessory": "BlindsHTTP",
+    "name": "Louvolite Blind",
+    "up_url": {
+        "url": "http://1.2.3.4:8838/neo/v1/transmit?command={blind_id}-up&id={hub_token}",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4:8838/neo/v1/transmit?command={blind_id}-dn&id={hub_token}",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4:8838/neo/v1/transmit?command={blind_id}-sp&id={hub_token}",
+        "method": "GET"
+    },
+    "motion_time": 15000,
+    "use_same_url_for_stop": false
+}

@@ -1,0 +1,31 @@
+{
+    "_description": "Bond Bridge / Bond Bridge Pro. The blind device is identified by a {device_id} hash you obtain from the Bond app or REST API. The BOND-Token header authenticates against the local-LAN Bond API. Supports SetPosition for exact-position moves; this example uses Open/Close/Hold for simplicity.",
+    "accessory": "BlindsHTTP",
+    "name": "Bond Blind",
+    "up_url": {
+        "url": "http://1.2.3.4/v2/devices/{device_id}/actions/Open",
+        "method": "PUT",
+        "body": "{}",
+        "headers": {
+            "BOND-Token": "your-bond-token-here"
+        }
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/v2/devices/{device_id}/actions/Close",
+        "method": "PUT",
+        "body": "{}",
+        "headers": {
+            "BOND-Token": "your-bond-token-here"
+        }
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/v2/devices/{device_id}/actions/Hold",
+        "method": "PUT",
+        "body": "{}",
+        "headers": {
+            "BOND-Token": "your-bond-token-here"
+        }
+    },
+    "http_success_codes": [200, 204],
+    "motion_time": 18000
+}

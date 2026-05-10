@@ -1,0 +1,23 @@
+{
+    "_description": "Two accessories in the same Homebridge config. Both use the same controller but different motion times and slightly offset values to avoid simultaneous network bursts overwhelming a shared API. Drop both objects into the 'accessories' array of config.json.",
+    "accessories": [
+        {
+            "accessory": "BlindsHTTP",
+            "name": "Living Room",
+            "up_url": { "url": "http://1.2.3.4/blinds/lr/up", "method": "GET" },
+            "down_url": { "url": "http://1.2.3.4/blinds/lr/down", "method": "GET" },
+            "stop_url": { "url": "http://1.2.3.4/blinds/lr/stop", "method": "GET" },
+            "motion_time": 9800,
+            "unique_serial": true
+        },
+        {
+            "accessory": "BlindsHTTP",
+            "name": "Dining Room",
+            "up_url": { "url": "http://1.2.3.4/blinds/dr/up", "method": "GET" },
+            "down_url": { "url": "http://1.2.3.4/blinds/dr/down", "method": "GET" },
+            "stop_url": { "url": "http://1.2.3.4/blinds/dr/stop", "method": "GET" },
+            "motion_time": 10200,
+            "unique_serial": true
+        }
+    ]
+}
