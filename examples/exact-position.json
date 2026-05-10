@@ -1,0 +1,14 @@
+{
+    "_description": "Single endpoint that drives the blind to an exact position via %%POS%%. When this placeholder is present the plugin assumes the request alone moves the blind to target and does NOT issue a separate stop. The same URL is used for both directions.",
+    "accessory": "BlindsHTTP",
+    "name": "Bedroom Shade",
+    "up_url": {
+        "url": "http://1.2.3.4/shade/setPosition?value=%%POS%%",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/shade/setPosition?value=%%POS%%",
+        "method": "GET"
+    },
+    "motion_time": 12000
+}

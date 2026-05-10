@@ -1,0 +1,32 @@
+{
+    "_description": "Blinds whose motor moves at different speeds at different positions. Each direction is a piecewise-linear curve sampled at as many positions as you want. Both directions must include entries for pos 0 AND pos 100. motion_time_graph takes precedence over motion_time when both are present.",
+    "accessory": "BlindsHTTP",
+    "name": "Calibrated Window",
+    "up_url": {
+        "url": "http://1.2.3.4/window/up",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/window/down",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/window/stop",
+        "method": "GET"
+    },
+    "motion_time_graph": {
+        "up": [
+            { "pos": 0, "seconds": 0 },
+            { "pos": 1, "seconds": 9.25 },
+            { "pos": 10, "seconds": 11.09 },
+            { "pos": 99, "seconds": 24.72 },
+            { "pos": 100, "seconds": 24.87 }
+        ],
+        "down": [
+            { "pos": 100, "seconds": 0 },
+            { "pos": 50, "seconds": 6.8 },
+            { "pos": 1, "seconds": 15.35 },
+            { "pos": 0, "seconds": 23.72 }
+        ]
+    }
+}

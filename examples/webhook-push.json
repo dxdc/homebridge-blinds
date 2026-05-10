@@ -1,0 +1,21 @@
+{
+    "_description": "Listens on port 51828 for push updates. ?pos=N updates current+target. ?target=N updates only the target without driving the motor (useful when an external system or physical remote has decided the new desired state). Optional Basic Auth.",
+    "accessory": "BlindsHTTP",
+    "name": "Living Room Shade",
+    "up_url": {
+        "url": "http://1.2.3.4/shade/up",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/shade/down",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/shade/stop",
+        "method": "GET"
+    },
+    "motion_time": 10000,
+    "webhook_port": 51828,
+    "webhook_http_auth_user": "homebridge",
+    "webhook_http_auth_pass": "change-me"
+}

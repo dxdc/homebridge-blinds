@@ -1,0 +1,18 @@
+{
+    "_description": "Smallest viable configuration. Three URLs and a motion time.",
+    "accessory": "BlindsHTTP",
+    "name": "Window",
+    "up_url": {
+        "url": "http://1.2.3.4/window/up",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/window/down",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/window/stop",
+        "method": "GET"
+    },
+    "motion_time": 10000
+}

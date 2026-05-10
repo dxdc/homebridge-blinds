@@ -1,0 +1,10 @@
+{
+    "_description": "Use the file:// URL prefix to run a shell command instead of issuing an HTTP request. Useful for MQTT publishes, serial commands, or any non-HTTP transport. The command runs through the system shell so quoting/escaping rules apply. Standard out is captured for use with pos_url.",
+    "accessory": "BlindsHTTP",
+    "name": "MQTT Blind",
+    "up_url": "file:///usr/local/bin/mosquitto_pub -t 'home/blind/cmd' -m 'OPEN'",
+    "down_url": "file:///usr/local/bin/mosquitto_pub -t 'home/blind/cmd' -m 'CLOSE'",
+    "stop_url": "file:///usr/local/bin/mosquitto_pub -t 'home/blind/cmd' -m 'STOP'",
+    "motion_time": 14000,
+    "verbose": true
+}

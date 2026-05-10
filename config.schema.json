@@ -2,89 +2,144 @@
     "pluginAlias": "BlindsHTTP",
     "pluginType": "accessory",
     "singular": false,
-    "headerDisplay": "Find the full documentation and report bugs [here](https://github.com/dxdc/homebridge-blinds).",
+    "headerDisplay": "Control HTTP-based blinds, shades, awnings, and shutters.\n\nFull documentation, tested device configurations (Tasmota, Bond, Louvolite, etc.), and bug reports: [github.com/dxdc/homebridge-blinds](https://github.com/dxdc/homebridge-blinds).\n\n**Quick tips:** include `%%POS%%` in any URL or body to inject the target position. Use a `file://` prefix to run a shell command instead of an HTTP request.",
     "schema": {
         "type": "object",
         "properties": {
             "name": {
-                "title": "Name",
+                "title": "Accessory name",
                 "type": "string",
-                "required": true
+                "required": true,
+                "description": "Display name shown in the Home app."
             },
             "up_url": { "$ref": "#/$defs/http_options" },
             "down_url": { "$ref": "#/$defs/http_options" },
+            "stop_url": { "$ref": "#/$defs/http_options" },
             "motion_time": {
-                "title": "Motion Time",
+                "title": "Motion Time (ms)",
                 "type": "integer",
                 "placeholder": 10000,
                 "minimum": 1,
-                "description": "Milliseconds for blinds to move completely up or down"
+                "description": "Milliseconds for the motor to move from fully open to fully closed (or back). Used for both directions if motion_time_graph is not set."
             },
             "motion_time_graph": {
-                "title": "Motion Time Mapping (optional)",
+                "title": "Motion Time Mapping (advanced, optional)",
                 "type": "object",
                 "expandable": true,
                 "properties": {
-                    "up": {
-                        "$ref": "#/$defs/motion_graph_entry"
-                    },
-                    "down": {
-                        "$ref": "#/$defs/motion_graph_entry"
-                    }
+                    "up": { "$ref": "#/$defs/motion_graph_entry" },
+                    "down": { "$ref": "#/$defs/motion_graph_entry" }
                 },
-                "description": "Overrides default motion time using a mapping of blind position as a function of seconds. For instance: @ 0.0 seconds, pos = 0; @ 9.7 seconds, pos = 50; @ 14.3 seconds, pos = 100. Minimally, add a time for position = 0 and position = 100."
+                "description": "Per-direction, piecewise motion timing. Use this when blinds move at different speeds at different positions, or when up/down speeds differ. Each direction needs at least entries for pos 0 and pos 100; intermediate entries refine the curve. Takes precedence over motion_time when both are set."
             },
             "show_toggle_button": {
                 "title": "Show Toggle (up/down) Button",
-                "type": "boolean"
-            },
-            "stop_url": { "$ref": "#/$defs/http_options" },
-            "use_same_url_for_stop": {
-                "title": "Use Same URL for Stop",
                 "type": "boolean",
-                "description": "Instead of using the STOP url, just re-send the UP or DOWN url"
+                "description": "Adds a HomeKit switch that flips the blinds based on the most recent up/down command."
             },
             "show_stop_button": {
                 "title": "Show Stop Button",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Adds a HomeKit switch that sends the configured stop URL."
+            },
+            "use_same_url_for_stop": {
+                "title": "Use Up/Down URL as Stop",
+                "type": "boolean",
+                "description": "Re-send the most recent up_url or down_url instead of stop_url. Useful for blinds that toggle on a single endpoint."
             },
             "trigger_stop_at_boundaries": {
                 "title": "Send Stop at Boundaries",
                 "type": "boolean",
-                "description": "Only needed if blinds do not stop automatically"
+                "description": "Send a stop command even when moving to fully open or fully closed. Most blinds stop themselves at boundaries; only enable this if yours do not."
             },
             "pos_url": {
                 "title": "Position URL",
                 "type": "string",
-                "description": "URL to get the current blinds position (must be 0-100 response)",
+                "description": "URL polled to learn the real blind position. Must return a value 0–100 (use pos_jsonata to extract it from larger payloads).",
                 "placeholder": "http://1.2.3.4/window/position",
                 "format": "uri"
             },
             "pos_poll_ms": {
-                "title": "Polling interval for Position URL",
+                "title": "Position polling interval (ms)",
                 "type": "integer",
-                "description": "Milliseconds between polling requests to position URL",
+                "description": "How often to poll the position URL. Minimum 5000 ms.",
                 "minimum": 5000,
                 "placeholder": 15000
             },
             "pos_jsonata": {
-                "title": "JSONata for Position URL",
+                "title": "JSONata for Position URL response",
                 "type": "string",
-                "description": "Expression to parse position URL response",
+                "description": "JSONata expression that extracts the position (0-100) from the response body. Example: `ShutterPosition1` returns the value of that field.",
                 "placeholder": "ShutterPosition1"
             },
             "send_pos_jsonata": {
-                "title": "JSONata for Target Position",
+                "title": "JSONata for outbound %%POS%%",
                 "type": "string",
-                "description": "Expression to map target position (optional)",
+                "description": "Optional JSONata expression that maps the HomeKit target (0-100) to whatever value the device expects before substituting into %%POS%%. Example below scales 0-100 to the inverted 0-255 range.",
                 "placeholder": "$round( ( 100 - $number($) ) * 255 / 100 )"
             },
             "response_lag_ms": {
-                "title": "Response Lag",
+                "title": "Response Lag (ms)",
                 "type": "integer",
                 "placeholder": 0,
                 "minimum": 0,
-                "description": "Milliseconds for device to respond after HTTP request. Improves accuracy for non-boundary positions due to network or motor lag."
+                "description": "Delay between sending the move command and the motor actually starting. Improves position accuracy when the device or RF link adds latency."
+            },
+            "request_timeout_ms": {
+                "title": "Request timeout (ms)",
+                "type": "integer",
+                "placeholder": 10000,
+                "minimum": 100,
+                "description": "Per-attempt HTTP timeout. Lower this so an unreachable device fails fast instead of stalling Homebridge."
+            },
+            "command_repeat_count": {
+                "title": "Command repeat count",
+                "type": "integer",
+                "placeholder": 1,
+                "minimum": 1,
+                "maximum": 10,
+                "description": "Send each move command this many times. Useful for unreliable RF blinds where the first command sometimes does not register."
+            },
+            "obstruction_threshold": {
+                "title": "Obstruction threshold",
+                "type": "integer",
+                "placeholder": 1,
+                "minimum": 1,
+                "description": "Consecutive failed requests required before HomeKit shows the blind as obstructed. Default 1 (trip immediately). Increase to filter out brief network blips."
+            },
+            "set_debounce_ms": {
+                "title": "Slider debounce (ms)",
+                "type": "integer",
+                "placeholder": 0,
+                "minimum": 0,
+                "description": "Wait this long after the last position change before issuing the move command. Coalesces a burst of HomeKit events (e.g. while dragging the slider in the Home app) into a single request. 0 disables debouncing."
+            },
+            "battery_url": {
+                "title": "Battery URL",
+                "type": "string",
+                "format": "uri",
+                "placeholder": "http://1.2.3.4/blind/battery",
+                "description": "Optional URL polled to read the blind's battery level. Must return a 0-100 integer (use battery_jsonata to extract from a larger payload)."
+            },
+            "battery_poll_ms": {
+                "title": "Battery polling interval (ms)",
+                "type": "integer",
+                "placeholder": 300000,
+                "minimum": 30000,
+                "description": "Milliseconds between battery polls. Default 5 minutes; minimum 30 seconds. Battery levels typically change slowly so a long interval is fine."
+            },
+            "battery_jsonata": {
+                "title": "JSONata for battery URL response",
+                "type": "string",
+                "placeholder": "BatteryLevel"
+            },
+            "battery_low_threshold": {
+                "title": "Low-battery threshold (%)",
+                "type": "integer",
+                "placeholder": 20,
+                "minimum": 0,
+                "maximum": 100,
+                "description": "iOS shows the low-battery indicator when BatteryLevel is at or below this value."
             },
             "http_success_codes": {
                 "type": "array",
@@ -116,7 +171,8 @@
                 "title": "Port",
                 "type": "integer",
                 "placeholder": 51828,
-                "minimum": 1
+                "minimum": 1,
+                "maximum": 65535
             },
             "webhook_http_auth_user": {
                 "title": "Username",
@@ -131,21 +187,27 @@
                 "type": "boolean"
             },
             "webhook_https_keyfile": {
-                "title": "Path To Private Key",
+                "title": "Path to private key",
                 "type": "string"
             },
             "webhook_https_certfile": {
-                "title": "Path To Certificate",
+                "title": "Path to certificate",
                 "type": "string"
             },
-            "unique_serial": {
-                "title": "Unique serial",
+            "invert_position": {
+                "title": "Invert Position",
                 "type": "boolean",
-                "description": "UUID-based serial/model number instead of default 'BlindsHTTPAccessory'"
+                "description": "Swap the 0% and 100% endpoints in HomeKit. Common for awnings or shades where 'closed' physically means extended/down."
+            },
+            "unique_serial": {
+                "title": "Use unique serial",
+                "type": "boolean",
+                "description": "Use a UUID-derived serial/model instead of the default 'BlindsHTTPAccessory'. Only required for integrations (e.g., Eve) that demand distinct serials per accessory."
             },
             "verbose": {
                 "title": "Verbose logging",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Log additional diagnostics: every poll, motion calculations, JSON parse errors, etc."
             }
         },
         "$defs": {
@@ -163,7 +225,7 @@
                             "required": true
                         },
                         "seconds": {
-                            "title": "Seconds",
+                            "title": "Elapsed seconds",
                             "type": "number",
                             "minimum": 0,
                             "placeholder": 0.0,
@@ -179,6 +241,7 @@
                         "title": "URL",
                         "type": "string",
                         "placeholder": "http://1.2.3.4/window/cmnd",
+                        "description": "May include %%POS%% (replaced with the integer target position) or `\"%%POSINT%%\"` (replaced as a raw JSON number, dropping the surrounding quotes). Prefix with `file://` to run a shell command instead.",
                         "format": "uri"
                     },
                     "method": {
@@ -200,17 +263,14 @@
                         "type": "object",
                         "title": "Headers",
                         "properties": {
-                            "Authorization": {
-                                "type": "string"
-                            },
-                            "BOND-Token": {
-                                "type": "string"
-                            }
+                            "Authorization": { "type": "string" },
+                            "BOND-Token": { "type": "string" }
                         }
                     },
                     "body": {
                         "title": "HTTP Body",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Request body sent for non-GET methods. Supports %%POS%% / %%POSINT%% substitution."
                     },
                     "maxAttempts": {
                         "title": "Maximum HTTP attempts",
@@ -219,10 +279,17 @@
                         "placeholder": 5
                     },
                     "retryDelay": {
-                        "title": "Delay (ms) between HTTP attempts",
+                        "title": "Delay (ms) between attempts",
                         "type": "integer",
                         "minimum": 0,
-                        "placeholder": 2000
+                        "placeholder": 2000,
+                        "description": "Base delay; the actual wait grows exponentially per retry."
+                    },
+                    "timeout": {
+                        "title": "Per-attempt timeout (ms)",
+                        "type": "integer",
+                        "minimum": 100,
+                        "placeholder": 10000
                     }
                 }
             }
@@ -231,26 +298,13 @@
     "layout": [
         "name",
         {
-            "title": "HTTP Success Codes",
-            "description": "List of HTTP codes indicating a successful API request (200, 204, etc.)",
-            "expandable": true,
-            "type": "fieldset",
-            "items": [
-                {
-                    "type": "array",
-                    "items": ["http_success_codes[]"],
-                    "minItems": 1
-                }
-            ]
-        },
-        {
             "title": "Up URL",
             "type": "fieldset",
             "expandable": true,
             "items": [
                 {
                     "type": "help",
-                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target.</p>"
+                    "helpvalue": "<p class='text-muted'>Tip: include <span class='text-info'>%%POS%%</span> in the URL or body to inject the target position. Use <span class='text-info'>file://</span> for shell scripts.</p>"
                 },
                 "up_url.url",
                 "up_url.method",
@@ -270,20 +324,15 @@
                             "displayFlex": true,
                             "flex-direction": "row",
                             "items": [
-                                {
-                                    "key": "up_url.headers.Authorization",
-                                    "flex": "1 1 50px"
-                                },
-                                {
-                                    "key": "up_url.headers.BOND-Token",
-                                    "flex": "1 1 50px"
-                                }
+                                { "key": "up_url.headers.Authorization", "flex": "1 1 50px" },
+                                { "key": "up_url.headers.BOND-Token", "flex": "1 1 50px" }
                             ]
                         }
                     ]
                 },
                 "up_url.maxAttempts",
-                "up_url.retryDelay"
+                "up_url.retryDelay",
+                "up_url.timeout"
             ]
         },
         {
@@ -293,7 +342,7 @@
             "items": [
                 {
                     "type": "help",
-                    "helpvalue": "<p class='text-muted'><span class='text-info'>%%POS%%</span> can be included in the URL, which will be replaced with the desired target.</p>"
+                    "helpvalue": "<p class='text-muted'>Tip: include <span class='text-info'>%%POS%%</span> in the URL or body to inject the target position. Use <span class='text-info'>file://</span> for shell scripts.</p>"
                 },
                 "down_url.url",
                 "down_url.method",
@@ -313,20 +362,15 @@
                             "displayFlex": true,
                             "flex-direction": "row",
                             "items": [
-                                {
-                                    "key": "down_url.headers.Authorization",
-                                    "flex": "1 1 50px"
-                                },
-                                {
-                                    "key": "down_url.headers.BOND-Token",
-                                    "flex": "1 1 50px"
-                                }
+                                { "key": "down_url.headers.Authorization", "flex": "1 1 50px" },
+                                { "key": "down_url.headers.BOND-Token", "flex": "1 1 50px" }
                             ]
                         }
                     ]
                 },
                 "down_url.maxAttempts",
-                "down_url.retryDelay"
+                "down_url.retryDelay",
+                "down_url.timeout"
             ]
         },
         {
@@ -352,20 +396,15 @@
                             "displayFlex": true,
                             "flex-direction": "row",
                             "items": [
-                                {
-                                    "key": "stop_url.headers.Authorization",
-                                    "flex": "1 1 50px"
-                                },
-                                {
-                                    "key": "stop_url.headers.BOND-Token",
-                                    "flex": "1 1 50px"
-                                }
+                                { "key": "stop_url.headers.Authorization", "flex": "1 1 50px" },
+                                { "key": "stop_url.headers.BOND-Token", "flex": "1 1 50px" }
                             ]
                         }
                     ]
                 },
                 "stop_url.maxAttempts",
                 "stop_url.retryDelay",
+                "stop_url.timeout",
                 {
                     "type": "flex",
                     "flex-flow": "row wrap",
@@ -379,7 +418,7 @@
                         {
                             "key": "use_same_url_for_stop",
                             "condition": {
-                                "functionBody": "return model.use_same_url_for_stop || ((model.down_url?.url || model.up_url?.url) && !model.stop_url.url)"
+                                "functionBody": "return model.use_same_url_for_stop || ((model.down_url?.url || model.up_url?.url) && !model.stop_url?.url)"
                             }
                         }
                     ]
@@ -387,15 +426,15 @@
             ]
         },
         {
-            "title": "Map %%POS%% for URL requests",
-            "description": "<i>Map target position specified by %%POS%% or %%POSINT%%% to a new value using JSONata.</i>",
+            "title": "Outbound position mapping",
+            "description": "Map the target position (0-100) before injecting it into %%POS%% / %%POSINT%%. Useful for devices that expect inverted or scaled values.",
             "type": "fieldset",
             "expandable": true,
             "items": ["send_pos_jsonata"]
         },
         {
-            "title": "Position URL",
-            "description": "<i>Update position by polling URL</i>",
+            "title": "Position URL (poll device)",
+            "description": "Optional: poll the device for its real position. The plugin emulates motion via timer if this is omitted.",
             "type": "fieldset",
             "expandable": true,
             "items": [
@@ -415,15 +454,15 @@
             ]
         },
         {
-            "title": "Position Webhook",
-            "description": "<i>Update position on ad-hoc basis</i>",
+            "title": "Position Webhook (push from device)",
+            "description": "Optional: run an HTTP listener that accepts position updates pushed from the device or another automation. Send any HTTP method to /?pos=N (sets current+target) or /?target=N (sets target only, no motor command). Values are 0-100.",
             "type": "fieldset",
             "expandable": true,
             "items": [
                 "webhook_port",
                 {
                     "type": "help",
-                    "helpvalue": "<span class='text-info'>Basic Authentication</span>"
+                    "helpvalue": "<span class='text-info'>Optional Basic Authentication</span>"
                 },
                 "webhook_http_auth_user",
                 "webhook_http_auth_pass",
@@ -443,8 +482,8 @@
             ]
         },
         {
-            "title": "Motion Timing",
-            "description": "<i>Calibrate blind movement times</i>",
+            "title": "Motion Timing & Calibration",
+            "description": "Tune how long the plugin waits for blinds to physically reach their target.",
             "type": "fieldset",
             "expandable": true,
             "items": [
@@ -457,7 +496,7 @@
                 "response_lag_ms",
                 {
                     "type": "help",
-                    "helpvalue": "<span class='text-info'>motion_time_graph has a higher priority over motion_time. This means, that if these are both explicitly provided in the configuration file, the value set in motion_time will be ignored. A linear rate of change will be assumed between positions and pos = 0 and pos = 100 are required at a minimum.</span>"
+                    "helpvalue": "<span class='text-info'>motion_time_graph takes precedence over motion_time. Each direction must include entries for pos = 0 and pos = 100; intermediate entries describe non-linear motion.</span>"
                 },
                 {
                     "key": "motion_time_graph.up",
@@ -470,14 +509,8 @@
                             "displayFlex": true,
                             "flex-direction": "row",
                             "items": [
-                                {
-                                    "key": "motion_time_graph.up[].pos",
-                                    "flex": "1 1 50px"
-                                },
-                                {
-                                    "key": "motion_time_graph.up[].seconds",
-                                    "flex": "1 1 50px"
-                                }
+                                { "key": "motion_time_graph.up[].pos", "flex": "1 1 50px" },
+                                { "key": "motion_time_graph.up[].seconds", "flex": "1 1 50px" }
                             ],
                             "minItems": 2
                         }
@@ -494,14 +527,8 @@
                             "displayFlex": true,
                             "flex-direction": "row",
                             "items": [
-                                {
-                                    "key": "motion_time_graph.down[].pos",
-                                    "flex": "1 1 50px"
-                                },
-                                {
-                                    "key": "motion_time_graph.down[].seconds",
-                                    "flex": "1 1 50px"
-                                }
+                                { "key": "motion_time_graph.down[].pos", "flex": "1 1 50px" },
+                                { "key": "motion_time_graph.down[].seconds", "flex": "1 1 50px" }
                             ],
                             "minItems": 2
                         }
@@ -539,10 +566,55 @@
             ]
         },
         {
+            "title": "Battery (optional)",
+            "description": "Surface a HomeKit Battery service that polls a URL on the device.",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "battery_url",
+                {
+                    "key": "battery_jsonata",
+                    "condition": { "functionBody": "return model.battery_url || model.battery_jsonata" }
+                },
+                {
+                    "key": "battery_poll_ms",
+                    "condition": { "functionBody": "return model.battery_url || model.battery_poll_ms" }
+                },
+                {
+                    "key": "battery_low_threshold",
+                    "condition": { "functionBody": "return model.battery_url || model.battery_low_threshold" }
+                }
+            ]
+        },
+        {
+            "title": "Reliability & retries",
+            "type": "fieldset",
+            "expandable": true,
+            "items": [
+                "request_timeout_ms",
+                "command_repeat_count",
+                "obstruction_threshold",
+                "set_debounce_ms",
+                {
+                    "type": "fieldset",
+                    "title": "HTTP success codes",
+                    "expandable": true,
+                    "description": "List of HTTP codes treated as success. Defaults to [200].",
+                    "items": [
+                        {
+                            "type": "array",
+                            "items": ["http_success_codes[]"],
+                            "minItems": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "title": "Optional Parameters",
             "type": "fieldset",
             "expandable": true,
-            "items": ["verbose", "unique_serial"]
+            "items": ["invert_position", "verbose", "unique_serial"]
         }
     ]
 }

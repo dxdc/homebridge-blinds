@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v3.0.0)'
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: npm-publish
+      url: https://www.npmjs.com/package/homebridge-blinds
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run smoke
+
+      - name: Verify tag matches package.json version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v${PKG_VERSION}" ]; then
+              echo "::error::Tag '${TAG}' does not match package.json version 'v${PKG_VERSION}'"
+              exit 1
+          fi
+
+      - run: npm publish --provenance --access public
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          body_path: CHANGELOG.md

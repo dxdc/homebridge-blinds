@@ -1,0 +1,25 @@
+{
+    "_description": "Tuning for flaky RF blinds. command_repeat_count fires each move 3 times in sequence (some RF transmitters miss the first command). obstruction_threshold waits for 3 consecutive failures before showing 'obstructed' in the Home app, which avoids false positives from brief network blips. request_timeout_ms keeps Homebridge responsive when the device is unreachable.",
+    "accessory": "BlindsHTTP",
+    "name": "Bedroom Blinds",
+    "up_url": {
+        "url": "http://1.2.3.4/blinds/up",
+        "method": "GET",
+        "maxAttempts": 3,
+        "retryDelay": 1000
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/blinds/down",
+        "method": "GET",
+        "maxAttempts": 3,
+        "retryDelay": 1000
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/blinds/stop",
+        "method": "GET"
+    },
+    "motion_time": 12000,
+    "command_repeat_count": 3,
+    "obstruction_threshold": 3,
+    "request_timeout_ms": 5000
+}

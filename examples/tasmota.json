@@ -1,0 +1,19 @@
+{
+    "_description": "Tasmota smart switch driving a 3-position relay (separate up/down/stop relays). Uses GET requests to /cm?cmnd=. For Sonoff-Dual or roller-shutter firmware variants, prefer ShutterPosition commands instead — see the wiki Tested-configurations page.",
+    "accessory": "BlindsHTTP",
+    "name": "Tasmota Blind",
+    "up_url": {
+        "url": "http://1.2.3.4/cm?cmnd=Backlog%20Power1%20ON%3BDelay%2010%3BPower1%20OFF",
+        "method": "GET"
+    },
+    "down_url": {
+        "url": "http://1.2.3.4/cm?cmnd=Backlog%20Power2%20ON%3BDelay%2010%3BPower2%20OFF",
+        "method": "GET"
+    },
+    "stop_url": {
+        "url": "http://1.2.3.4/cm?cmnd=Backlog%20Power3%20ON%3BDelay%2010%3BPower3%20OFF",
+        "method": "GET"
+    },
+    "motion_time": 11000,
+    "trigger_stop_at_boundaries": false
+}
