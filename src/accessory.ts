@@ -1,3 +1,5 @@
+// homebridge ships ESM types; import attribute keeps node16 resolution happy
+// while we still emit CommonJS.
 import type {
     API,
     AccessoryConfig,
@@ -5,7 +7,7 @@ import type {
     CharacteristicValue,
     Logger as HbLogger,
     Service,
-} from 'homebridge';
+} from 'homebridge' with { 'resolution-mode': 'import' };
 
 import { normalizeConfig } from './config';
 import { HttpClient, HttpRequestError } from './http-client';
@@ -145,6 +147,9 @@ export class BlindsAccessory implements AccessoryPlugin {
         }
 
         if (this.config.webhookPort > 0) {
+            // selfsigned v5 generates certs asynchronously; the server starts
+            // listening once the (cached) cert is ready. Failures are logged
+            // and don't block accessory construction.
             startWebhookServer({
                 port: this.config.webhookPort,
                 https: this.config.webhookHttps,
@@ -156,6 +161,9 @@ export class BlindsAccessory implements AccessoryPlugin {
                 log: logger,
                 onPosition: (pos) => this.handleWebhookPosition(pos),
                 onTarget: (target) => this.handleWebhookTarget(target),
+            }).catch((err: unknown) => {
+                const message = err instanceof Error ? err.message : String(err);
+                logger.error(`Failed to start webhook server: ${message}`);
             });
         }
     }

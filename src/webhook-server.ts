@@ -38,15 +38,19 @@ export interface WebhookOptions {
  * certificate is generated, cached on disk via the in-tree `Storage`, and
  * rotated when it approaches its expiration. The cache survives plugin
  * restarts.
+ *
+ * Cert generation in `selfsigned` v5+ is async-only, so this function is
+ * async too. Callers that don't need the `Server` reference can fire-and-
+ * forget; the returned promise resolves once the listener is bound.
  */
-export function startWebhookServer(opts: WebhookOptions): Server {
+export async function startWebhookServer(opts: WebhookOptions): Promise<Server> {
     const handler = (req: IncomingMessage, res: ServerResponse): void => {
         if (!authorize(req, res, opts)) return;
         handleRequest(req, res, opts);
     };
 
     if (opts.https) {
-        const sslOptions = resolveSslOptions(opts);
+        const sslOptions = await resolveSslOptions(opts);
         const server = createHttpsServer(sslOptions, handler) as unknown as Server;
         server.listen(opts.port, '0.0.0.0');
         opts.log.info(`Started HTTPS server for webhook on port ${opts.port}`);
@@ -170,7 +174,7 @@ interface CachedSslCert {
     certVersion: number;
 }
 
-function resolveSslOptions(opts: WebhookOptions): { key: string | Buffer; cert: string | Buffer } {
+async function resolveSslOptions(opts: WebhookOptions): Promise<{ key: string | Buffer; cert: string | Buffer }> {
     if (opts.httpsKeyFile && opts.httpsCertFile) {
         opts.log.info(`Using SSL certificate from ${opts.httpsKeyFile}`);
         return {
@@ -195,9 +199,9 @@ function resolveSslOptions(opts: WebhookOptions): { key: string | Buffer; cert: 
             generate: (
                 attrs: Array<{ name: string; value: string }>,
                 opts: { days: number },
-            ) => { private: string; cert: string };
+            ) => Promise<{ private: string; cert: string }>;
         };
-        const pems = selfsigned.generate([{ name: 'commonName', value: 'localhost' }], { days: SSL_CERT_DAYS });
+        const pems = await selfsigned.generate([{ name: 'commonName', value: 'localhost' }], { days: SSL_CERT_DAYS });
         cached = {
             private: pems.private,
             cert: pems.cert,

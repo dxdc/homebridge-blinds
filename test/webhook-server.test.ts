@@ -21,7 +21,7 @@ async function startWebhook(authUser: string | false = false, authPass: string |
     const onPosition = vi.fn();
     const onTarget = vi.fn();
 
-    const server = startWebhookServer({
+    const server = await startWebhookServer({
         port: 0, // ephemeral
         https: false,
         httpsKeyFile: false,
@@ -132,4 +132,63 @@ describe('webhook server: basic auth', () => {
         const res = await get(`http://127.0.0.1:${fx.port}/?pos=1`, { Authorization: auth });
         expect(res.status).toBe(401);
     });
+});
+
+describe('webhook server: HTTPS with auto-generated cert', () => {
+    it('generates a self-signed cert, caches it, and serves over HTTPS', async () => {
+        const dir = mkdtempSync(join(tmpdir(), 'hb-blinds-webhook-https-'));
+        const storage = new Storage(dir);
+        const onPosition = vi.fn();
+
+        const server = await startWebhookServer({
+            port: 0,
+            https: true,
+            httpsKeyFile: false,
+            httpsCertFile: false,
+            authUser: false,
+            authPass: false,
+            storage,
+            log: createTestLogger(),
+            onPosition,
+            onTarget: vi.fn(),
+        });
+
+        try {
+            while (!server.listening) {
+                await new Promise((r) => setTimeout(r, 5));
+            }
+            const port = (server.address() as AddressInfo).port;
+
+            const httpsRequest = (await import('node:https')).request;
+            const status = await new Promise<number>((resolve, reject) => {
+                const req = httpsRequest(
+                    {
+                        hostname: '127.0.0.1',
+                        port,
+                        path: '/?pos=42',
+                        method: 'GET',
+                        // Self-signed cert won't be trusted by the default CA store.
+                        rejectUnauthorized: false,
+                    },
+                    (res) => {
+                        res.resume();
+                        resolve(res.statusCode ?? 0);
+                    },
+                );
+                req.on('error', reject);
+                req.end();
+            });
+
+            expect(status).toBe(200);
+            expect(onPosition).toHaveBeenCalledWith(42);
+
+            // The generated cert must be persisted so subsequent restarts reuse it.
+            const cached = storage.getItemSync<{ cert: string; private: string }>('homebridge-blinds-webhook-ssl-cert');
+            expect(cached?.cert).toMatch(/-----BEGIN CERTIFICATE-----/);
+            expect(cached?.private).toMatch(/-----BEGIN (RSA )?PRIVATE KEY-----/);
+        } finally {
+            await new Promise<void>((resolve) => server.close(() => resolve()));
+            rmSync(dir, { recursive: true, force: true });
+        }
+    }, 15_000);
 });
