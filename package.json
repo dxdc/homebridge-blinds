@@ -79,11 +79,11 @@
     "license": "ISC",
     "dependencies": {
         "jsonata": "^2.0.5",
-        "selfsigned": "^2.4.1"
+        "selfsigned": "^5.5.0"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
-        "@types/node": "^25.6.2",
+        "@types/node": "^22.10.0",
         "eslint": "^10.3.0",
         "homebridge": "^2.0.2",
         "prettier": "^3.8.3",
