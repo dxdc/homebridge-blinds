@@ -40,11 +40,24 @@ function makeChar(name) {
     return {
         name,
         value: undefined,
-        on() { return this; },
-        onGet(fn) { this._onGet = fn; return this; },
-        onSet(fn) { this._onSet = fn; return this; },
-        updateValue(v) { this.value = v; return this; },
-        setCharacteristic() { return this; },
+        on() {
+            return this;
+        },
+        onGet(fn) {
+            this._onGet = fn;
+            return this;
+        },
+        onSet(fn) {
+            this._onSet = fn;
+            return this;
+        },
+        updateValue(v) {
+            this.value = v;
+            return this;
+        },
+        setCharacteristic() {
+            return this;
+        },
     };
 }
 
@@ -71,9 +84,15 @@ const PositionState = { name: 'PositionState', STOPPED: 2, INCREASING: 1, DECREA
 const api = {
     hap: {
         Service: {
-            WindowCovering: function (n) { Object.assign(this, makeService(n)); },
-            AccessoryInformation: function () { Object.assign(this, makeService('Accessory Information')); },
-            Switch: function (n) { Object.assign(this, makeService(n)); },
+            WindowCovering: function (n) {
+                Object.assign(this, makeService(n));
+            },
+            AccessoryInformation: function () {
+                Object.assign(this, makeService('Accessory Information'));
+            },
+            Switch: function (n) {
+                Object.assign(this, makeService(n));
+            },
         },
         Characteristic: {
             CurrentPosition: Char('CurrentPosition'),
@@ -149,9 +168,20 @@ for (const file of exampleFiles) {
 const http = require('node:http');
 
 (async () => {
-    const requests = [];
+    // Bucket every observed request into one of these slots. Storing only the
+    // matched bucket name (a constant string we own) means req.url never reaches
+    // any log line — so CodeQL's log-injection rule has nothing to chase.
+    const PATH_BUCKETS = ['/up', '/down', '/stop', 'other'];
+    const counts = Object.fromEntries(PATH_BUCKETS.map((b) => [b, 0]));
+    const bucketFor = (url) => {
+        if (url === '/up') return '/up';
+        if (url === '/down') return '/down';
+        if (url === '/stop') return '/stop';
+        return 'other';
+    };
+
     const server = http.createServer((req, res) => {
-        requests.push({ method: req.method, path: req.url });
+        counts[bucketFor(typeof req.url === 'string' ? req.url : '')]++;
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end('{"ok":true}');
@@ -182,27 +212,27 @@ const http = require('node:http');
     // Drive a move to 50 and wait for the up + stop sequence to land.
     await target._onSet(50);
     const start = Date.now();
-    while (
-        !(requests.some((r) => r.path === '/up') && requests.some((r) => r.path === '/stop')) &&
-        Date.now() - start < 5000
-    ) {
+    while (!(counts['/up'] > 0 && counts['/stop'] > 0) && Date.now() - start < 5000) {
         await new Promise((r) => setTimeout(r, 50));
     }
 
     server.close();
 
-    if (!requests.some((r) => r.path === '/up')) {
-        console.error('[smoke] expected /up to be issued; got:', requests.map((r) => r.path));
+    const total = PATH_BUCKETS.reduce((n, k) => n + counts[k], 0);
+    const summary = PATH_BUCKETS.map((k) => `${k}=${counts[k]}`).join(', ');
+
+    if (counts['/up'] === 0) {
+        console.error(`[smoke] expected /up to be issued; got: ${summary}`);
         process.exit(1);
     }
-    if (!requests.some((r) => r.path === '/stop')) {
-        console.error('[smoke] expected /stop to be issued; got:', requests.map((r) => r.path));
+    if (counts['/stop'] === 0) {
+        console.error(`[smoke] expected /stop to be issued; got: ${summary}`);
         process.exit(1);
     }
 
     console.log(
         `[smoke] OK: registered plugin, constructed ${constructed} accessories from ${exampleFiles.length} example files, ` +
-            `and drove a live move (${requests.length} requests received: ${requests.map((r) => r.path).join(', ')})`,
+            `and drove a live move (${total} requests received: ${summary})`,
     );
     process.exit(0);
 })().catch((err) => {
