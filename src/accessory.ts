@@ -1,3 +1,5 @@
+// homebridge ships ESM types; import attribute keeps node16 resolution happy
+// while we still emit CommonJS.
 import type {
     API,
     AccessoryConfig,
@@ -5,7 +7,7 @@ import type {
     CharacteristicValue,
     Logger as HbLogger,
     Service,
-} from 'homebridge';
+} from 'homebridge' with { 'resolution-mode': 'import' };
 
 import { normalizeConfig } from './config';
 import { HttpClient, HttpRequestError } from './http-client';
