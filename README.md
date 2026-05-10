@@ -7,37 +7,62 @@
 [![isc license](https://badgen.net/badge/license/ISC/red)](https://github.com/dxdc/homebridge-blinds/blob/master/LICENSE)
 [![npm](https://badgen.net/npm/v/homebridge-blinds)](https://www.npmjs.com/package/homebridge-blinds)
 [![npm](https://badgen.net/npm/dt/homebridge-blinds)](https://www.npmjs.com/package/homebridge-blinds)
-[![Discord](https://camo.githubusercontent.com/7494d4da7060081501319a848bbba143cbf6101a/68747470733a2f2f696d672e736869656c64732e696f2f646973636f72642f3433323636333333303238313232363237303f636f6c6f723d373238454435266c6f676f3d646973636f7264266c6162656c3d646973636f7264)](https://discord.gg/9VgPRmY)
+[![Discord](https://img.shields.io/discord/432663330281226270?color=728ED5&logo=discord&label=discord)](https://discord.gg/9VgPRmY)
 [![Donate](https://badgen.net/badge/Donate/PayPal/91BE09)](https://paypal.me/ddcaspi)
 
-`homebridge-blinds` controls **blinds, shades, awnings, shutters, and roller
-curtains** in Apple HomeKit via [Homebridge](https://homebridge.io). It speaks:
+Bring **blinds, shades, awnings, shutters, and roller curtains** into Apple
+HomeKit via [Homebridge](https://homebridge.io). If your blind exposes any
+kind of network or scriptable interface, this plugin can drive it.
 
-- **HTTP / REST** — direct `up` / `down` / `stop` / `setPosition` endpoints
-  with custom methods, headers, bodies, retries, and per-URL timeouts.
-- **Shell commands, scripts, and CLI tools** — any URL prefixed `file://` is
-  executed as a shell command, so MQTT publishes (`mosquitto_pub`), Python
-  scripts, serial bridges, or anything else you can run from a shell works
-  out of the box.
-- **Webhooks** — optional HTTP listener (with Basic Auth or TLS) that lets
-  external automations or physical remotes push position updates back into
-  HomeKit.
+- **HTTP / REST** — `up` / `down` / `stop` / `setPosition` endpoints with
+  custom methods, headers, bodies, retries, and per-URL timeouts.
+- **Shell commands** — prefix any URL with `file://` to run a script, an
+  MQTT publish (`mosquitto_pub`), a serial bridge, or anything else you can
+  invoke from a shell.
+- **Webhooks** — optional HTTP listener (Basic Auth and TLS supported) so
+  external automations or physical remotes can push position updates back
+  into HomeKit.
 - **Polled position feedback** with [JSONata](https://jsonata.org)
-  extraction for nested device payloads.
+  extraction for nested JSON payloads.
+- **Resilient by default** — per-URL retry budgets, exponential backoff,
+  command repeats for unreliable RF, slider debouncing, and last-known
+  position persisted across Homebridge restarts.
 
 Tested with **Tasmota**, **Bond Bridge**, **Louvolite Neo Smart Blinds**, and
-many DIY firmware variants. Fully written in TypeScript, verified by
-Homebridge, supports Homebridge `1.8+` and `2.x`.
+many DIY firmware variants. Written in TypeScript, [verified by
+Homebridge](https://github.com/homebridge/homebridge/wiki/Verified-Plugins),
+runs on Homebridge `1.8+` and `2.x`.
 
-## Installation
+## Contents
 
-If you're new to Homebridge, start with the [Homebridge documentation](https://www.npmjs.com/package/homebridge).
-On a Raspberry Pi, the [homebridge-punt Wiki](https://github.com/cflurin/homebridge-punt/wiki/Running-Homebridge-on-a-Raspberry-Pi)
-walks through the basics.
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Common scenarios](#common-scenarios)
+- [Configuration reference](#configuration-reference)
+    - [URLs](#urls-up_url-down_url-stop_url-pos_url)
+    - [Motion timing](#motion-timing-and-calibration)
+    - [Position polling](#position-polling)
+    - [Position webhook](#position-webhook-push-based-updates)
+    - [Outbound position mapping](#outbound-position-mapping-send_pos_jsonata)
+    - [Reliability and retries](#reliability-and-retries)
+    - [Battery](#battery-optional)
+    - [Optional behavior](#optional-behavior)
+    - [HomeKit characteristics](#homekit-characteristics-exposed)
+    - [Full example](#full-advanced-example)
+- [Migration from v2](#migration-from-v2)
+- [Development](#development)
+- [Contributing](#how-to-contribute)
+- [Support this project](#support-this-project)
 
-The easiest way to install and configure this plugin is via the
-[Homebridge UI](https://github.com/homebridge/homebridge-config-ui-x). Search
-for `homebridge-blinds` and install. To install on the command line:
+## Install
+
+New to Homebridge? Start with the
+[Homebridge docs](https://www.npmjs.com/package/homebridge). On a Raspberry Pi, see
+[this guide](https://github.com/cflurin/homebridge-punt/wiki/Running-Homebridge-on-a-Raspberry-Pi).
+
+The easiest path is the
+[Homebridge UI](https://github.com/homebridge/homebridge-config-ui-x): search
+for **homebridge-blinds** and click **Install**. Or, from a terminal:
 
 ```sh
 sudo npm install -g homebridge-blinds
@@ -45,70 +70,151 @@ sudo npm install -g homebridge-blinds
 
 ## Quick start
 
-Add an accessory in your Homebridge `config.json`:
+You only need three things to get going:
+
+1. **One or more URLs** the plugin will hit to drive the blind (`up_url`,
+   `down_url`, `stop_url`).
+2. **`motion_time`** — milliseconds your motor takes to move from fully open
+   to fully closed.
+3. **A name** that will show up in the Home app.
+
+Drop this into the `accessories` array of your Homebridge `config.json`:
 
 ```json
 {
     "accessory": "BlindsHTTP",
     "name": "Window",
-    "up_url": { "url": "http://1.2.3.4/window/up", "method": "GET" },
-    "down_url": { "url": "http://1.2.3.4/window/down", "method": "GET" },
-    "stop_url": { "url": "http://1.2.3.4/window/stop", "method": "GET" },
-    "http_success_codes": [200, 204],
+    "up_url": "http://1.2.3.4/window/up",
+    "down_url": "http://1.2.3.4/window/down",
+    "stop_url": "http://1.2.3.4/window/stop",
     "motion_time": 10000
 }
 ```
 
-That's everything most setups need. `motion_time` (in milliseconds) is how long
-your motor takes to move from fully open to fully closed.
+Restart Homebridge. The blind appears as a Window Covering tile in the Home
+app — drag the slider, the plugin issues the `up`/`down`/`stop` requests on
+your behalf. Method defaults to `GET`; status `200` counts as success.
 
-## Advanced configuration
+> **Tip:** if you use the Homebridge UI, every option below is also
+> available as a form field — you don't need to hand-edit JSON.
 
-Every option is documented below. A fully populated example is at the bottom of
-this section for reference.
+## Common scenarios
+
+Pick the closest match and copy the matching example. Each one is a complete,
+working config you can paste in and tweak.
+
+| If your blind…                                                 | Use this example                                                       |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Has separate up / down / stop endpoints (most common)          | [`examples/basic.json`](./examples/basic.json)                         |
+| Accepts an exact target position (e.g. Tasmota Shutter)        | [`examples/tasmota.json`](./examples/tasmota.json)                     |
+| Is a Bond Bridge–controlled motor                              | [`examples/bond-bridge.json`](./examples/bond-bridge.json)             |
+| Is a Louvolite Neo Smart Blind                                 | [`examples/louvolite-neo.json`](./examples/louvolite-neo.json)         |
+| Is an awning or shade where "closed" means physically extended | [`examples/awning-inverted.json`](./examples/awning-inverted.json)     |
+| Reports its real position back via a polled URL                | [`examples/position-feedback.json`](./examples/position-feedback.json) |
+| Pushes position updates via webhook (e.g. external automation) | [`examples/webhook-push.json`](./examples/webhook-push.json)           |
+| Has different up vs. down speeds, or non-linear motion         | [`examples/non-linear-motion.json`](./examples/non-linear-motion.json) |
+| Is RF-driven and sometimes misses commands                     | [`examples/unreliable-rf.json`](./examples/unreliable-rf.json)         |
+| Is driven by an MQTT publish or a custom shell script          | [`examples/shell-script.json`](./examples/shell-script.json)           |
+| You want to expose multiple blinds at once                     | [`examples/multiple-blinds.json`](./examples/multiple-blinds.json)     |
+
+A community-maintained list of working setups lives on the
+[Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Tested-configurations).
+
+## Configuration reference
+
+Every option is documented below. Only `name`, the URLs you want to use, and
+`motion_time` are required — everything else has a sensible default. A fully
+populated example sits at the [bottom of this
+section](#full-advanced-example).
 
 ### URLs (`up_url`, `down_url`, `stop_url`, `pos_url`)
 
-Each URL accepts either a string (the URL itself) or an object with the
-following keys:
+A URL can be a plain string (just the URL) or an object with these keys:
 
-| Key           | Description                                                                                                             |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `url`         | Required. The HTTP URL or a `file://` shell command (see below).                                                        |
-| `method`      | `GET` (default), `POST`, `PUT`, `PATCH`, or `DELETE`.                                                                   |
-| `headers`     | Object of header name → value.                                                                                          |
-| `body`        | String or JSON-serializable object. Sent for non-`GET` methods.                                                         |
-| `maxAttempts` | Override the global retry budget for just this URL (default: `5`).                                                      |
-| `retryDelay`  | Override the base retry delay (ms) for just this URL (default: `2000`). The actual delay grows exponentially per retry. |
-| `timeout`     | Per-attempt timeout in ms for just this URL (default: `request_timeout_ms`, which is `10000`).                          |
+| Key           | Default              | Description                                                                                 |
+| ------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| `url`         | required             | The HTTP URL, or a `file://` shell command (see below).                                     |
+| `method`      | `GET`                | `GET`, `POST`, `PUT`, `PATCH`, or `DELETE`.                                                 |
+| `headers`     | —                    | Object of header name → value.                                                              |
+| `body`        | —                    | String or JSON-serializable object. Sent for non-`GET` methods.                             |
+| `maxAttempts` | `5`                  | Retry budget for this URL only.                                                             |
+| `retryDelay`  | `2000`               | Base delay (ms) between retries; grows exponentially per attempt.                           |
+| `timeout`     | `request_timeout_ms` | Per-attempt timeout in ms. Falls back to the global `request_timeout_ms` (default `10000`). |
 
-Any URL can be omitted; the plugin simply won't issue that command. Without a
-`pos_url`, the plugin emulates the position with a timer.
+Any URL can be omitted — the plugin simply won't issue that command.
+
+```jsonc
+// Compact: just the URL string
+"up_url": "http://1.2.3.4/window/up"
+
+// Full: every override available
+"up_url": {
+    "url": "http://1.2.3.4/window/up",
+    "method": "POST",
+    "headers": { "API-Token": "abc" },
+    "body": "{}",
+    "timeout": 5000
+}
+```
 
 #### Position placeholders
 
-Within any URL, body, or header value:
+You can target an exact position by embedding placeholders in the URL, body,
+or any header value:
 
-- `%%POS%%` — replaced literally with the integer target (0–100). Goes inside JSON strings unchanged.
-- `"%%POSINT%%"` — the **quoted** placeholder is replaced as a raw JSON number,
-  dropping the surrounding quotes. Use this when your device requires a numeric
-  JSON field (e.g. `{ "position": "%%POSINT%%" }` becomes `{ "position": 42 }`).
+- `%%POS%%` — replaced with the integer target `0`–`100` (treated as plain
+  text; safe to drop inside a JSON string).
+- `"%%POSINT%%"` — the **quoted** placeholder is replaced as a raw JSON
+  number, dropping the surrounding quotes. Use when your device expects a
+  numeric field, e.g. `{ "position": "%%POSINT%%" }` becomes
+  `{ "position": 42 }`.
 
-When a placeholder is present, the plugin assumes the request drives the blind
-exactly to the target, so it does **not** send a separate stop command unless
-`trigger_stop_at_boundaries` is true.
+When a placeholder is present the plugin trusts the request to drive the
+blind to the exact target, so no separate stop command is sent (unless
+`trigger_stop_at_boundaries` is `true`).
 
 #### `file://` — run a shell command
 
-Any URL prefixed with `file://` is executed as a shell command instead of
-issuing an HTTP request. Use this for MQTT publishes, serial commands, or
-custom scripts. See the [Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Command-line-scripts)
+Prefix any URL with `file://` to run a shell command instead of an HTTP
+request. Useful for MQTT publishes, serial commands, or custom scripts.
+See the [Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Command-line-scripts)
 for examples.
 
 #### `http_success_codes`
 
-Array of HTTP status codes treated as success. Defaults to `[200]`. Set to e.g.
-`[200, 202, 204]` if your device returns something other than `200`.
+HTTP status codes that count as success. Defaults to `[200]`; set to e.g.
+`[200, 202, 204]` if your device returns something else.
+
+### Motion timing and calibration
+
+`motion_time` (ms) is how long the motor takes to move fully open ↔ fully
+closed. This is required even when `pos_url` is configured — it tells the
+plugin when the blind _should_ have arrived, so it doesn't hammer the
+device with status checks.
+
+> **Tip:** filming the blinds with your phone gives the most accurate timing.
+> If multiple blinds run on the same controller and you see network errors
+> when they all move at once, set slightly different `motion_time` values
+> per blind (e.g. `9800`, `10000`, `10200`).
+
+#### Per-direction and non-linear motion (`motion_time_graph`)
+
+When up and down speeds differ, or motion is non-linear (slow start, fast
+middle, etc.), use `motion_time_graph`:
+
+```jsonc
+"motion_time_graph": {
+    "up":   [{ "pos": 0, "seconds": 0 }, { "pos": 50, "seconds": 9.7 }, { "pos": 100, "seconds": 14.3 }],
+    "down": [{ "pos": 100, "seconds": 0 }, { "pos": 0, "seconds": 23.7 }]
+}
+```
+
+Each direction must include entries for both `pos: 0` and `pos: 100`.
+Intermediate points describe a piecewise-linear curve. `motion_time_graph`
+takes precedence over `motion_time` when both are set.
+
+`response_lag_ms` adds a fixed pre-motion delay to account for network or
+RF latency between sending the command and the motor actually starting.
 
 ### Position polling
 
@@ -125,17 +231,16 @@ uses the first numeric value in the object.
 
 ### Position webhook (push-based updates)
 
-When your device or another automation can push position changes, run a small
-HTTP listener on the plugin so it stays in sync without polling.
+When your device or another automation can push position changes, run a
+small HTTP listener so HomeKit stays in sync without polling. Send any HTTP
+method to `http://<homebridge-host>:<webhook_port>/` — the body is ignored;
+only the query string matters:
 
-| Query string          | Effect                                                                                                                                                                                  |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `?pos=<0-100>`        | Update both `CurrentPosition` and `TargetPosition`. Use this to sync HomeKit after the device has moved.                                                                                |
-| `?target=<0-100>`     | Update `TargetPosition` **only**, without driving the motor. Use this when an external system has decided the new desired state and you don't want the plugin to issue its own command. |
-| `?pos=<N>&target=<N>` | When both are present, `pos` wins.                                                                                                                                                      |
-
-Send any HTTP method to `http://<homebridge-host>:<webhook_port>/`. The body
-is ignored.
+| Query string          | Effect                                                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `?pos=<0-100>`        | Update both `CurrentPosition` and `TargetPosition`. Use this to sync HomeKit after the device has moved.              |
+| `?target=<0-100>`     | Update `TargetPosition` **only**, without driving the motor. Use when an external system has already moved the blind. |
+| `?pos=<N>&target=<N>` | When both are present, `pos` wins.                                                                                    |
 
 | Option                   | Default | Description                                                    |
 | ------------------------ | ------- | -------------------------------------------------------------- |
@@ -146,8 +251,8 @@ is ignored.
 | `webhook_https_keyfile`  | —       | Path to TLS private key. Auto-generated and cached if omitted. |
 | `webhook_https_certfile` | —       | Path to TLS certificate. Auto-generated and cached if omitted. |
 
-Credentials are compared with timing-safe equality. Self-generated certificates
-rotate automatically before expiry.
+Credentials are compared with timing-safe equality, and self-generated
+certificates rotate automatically before expiry.
 
 ### Outbound position mapping (`send_pos_jsonata`)
 
@@ -159,38 +264,7 @@ to the expression is the integer position; the output is substituted directly.
 "send_pos_jsonata": "$round( ( 100 - $number($) ) * 255 / 100 )"
 ```
 
-The above example inverts the value and scales it from `0–100` to `0–255`.
-
-### Motion timing and calibration
-
-`motion_time` (ms) is how long the motor takes to move fully open ↔ fully
-closed. Even when `pos_url` is configured, this value is still required — it is
-used to estimate when the blind _should_ be at the target, which avoids
-hammering the device with status checks.
-
-Tip: filming the blinds with your phone gives the most accurate timing. If
-multiple blinds run on the same controller and you see network errors when
-they all move at once, set slightly different `motion_time` values per blind
-(e.g. `9800`, `10000`, `10200`).
-
-#### Per-direction and non-linear motion (`motion_time_graph`)
-
-When the up and down speeds differ, or when motion is not linear (slow start,
-fast middle, etc.), use `motion_time_graph`:
-
-```jsonc
-"motion_time_graph": {
-    "up":   [{ "pos": 0, "seconds": 0 }, { "pos": 50, "seconds": 9.7 }, { "pos": 100, "seconds": 14.3 }],
-    "down": [{ "pos": 100, "seconds": 0 }, { "pos": 0, "seconds": 23.7 }]
-}
-```
-
-Each direction must have entries for both `pos: 0` and `pos: 100`. Intermediate
-points describe a piecewise-linear curve. `motion_time_graph` takes precedence
-over `motion_time` when both are set.
-
-`response_lag_ms` adds a fixed pre-motion delay to account for network or RF
-latency between sending the command and the motor starting.
+The above inverts the value and scales it from `0–100` to `0–255`.
 
 ### Reliability and retries
 
@@ -223,16 +297,28 @@ itself may be perfectly reachable on its primary URLs.
 
 ### Optional behavior
 
-| Option                       | Default | Description                                                                                                                                                                                     |
-| ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show_stop_button`           | `false` | Expose a HomeKit switch that sends the stop URL.                                                                                                                                                |
-| `show_toggle_button`         | `false` | Expose a HomeKit switch that toggles between the last up and last down command. On startup it does nothing until either the persisted position is `0` or `100` or the user has issued one move. |
-| `show_favorite_buttons`      | `[]`    | Expose HomeKit switches for shortcut positions, e.g. `[25, 50, 75]`.                                                                                                                            |
-| `invert_position`            | `false` | Swap the `0%` and `100%` endpoints in HomeKit. Common for awnings/shades where "closed" is physically extended.                                                                                 |
-| `unique_serial`              | `false` | Use a UUID-based serial/model in HomeKit. Required for some external integrations (e.g. Eve) that expect distinct serials.                                                                      |
-| `use_same_url_for_stop`      | `false` | Re-send the most recent up_url or down_url instead of `stop_url`. For blinds that toggle on a single endpoint.                                                                                  |
-| `trigger_stop_at_boundaries` | `false` | Send a stop command even when moving to fully open or fully closed. Most blinds stop themselves; only enable if yours don't.                                                                    |
-| `verbose`                    | `false` | Additional diagnostics: every poll, motion calculations, JSON parse errors, etc. Use when debugging.                                                                                            |
+**Extra HomeKit controls**
+
+| Option                  | Default | Description                                                                                                                                                                              |
+| ----------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show_stop_button`      | `false` | Expose a HomeKit switch that sends the stop URL. Most users should rely on the standard `HoldPosition` (see below) instead.                                                              |
+| `show_toggle_button`    | `false` | Expose a HomeKit switch that toggles between the last up and last down command. On startup it stays idle until either the persisted position is `0` or `100`, or the user issues a move. |
+| `show_favorite_buttons` | `[]`    | Expose HomeKit switches for shortcut positions, e.g. `[25, 50, 75]`.                                                                                                                     |
+
+**Position quirks**
+
+| Option                       | Default | Description                                                                                                                  |
+| ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `invert_position`            | `false` | Swap the `0%` and `100%` endpoints in HomeKit. Common for awnings/shades where "closed" means physically extended.           |
+| `use_same_url_for_stop`      | `false` | Re-send the most recent up/down URL instead of `stop_url`. For blinds that toggle on a single endpoint.                      |
+| `trigger_stop_at_boundaries` | `false` | Send a stop command even when moving to fully open or fully closed. Most blinds stop themselves; only enable if yours don't. |
+
+**Identity and diagnostics**
+
+| Option          | Default | Description                                                                                                                |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `unique_serial` | `false` | Use a UUID-based serial/model in HomeKit. Required for some external integrations (e.g. Eve) that expect distinct serials. |
+| `verbose`       | `false` | Log additional diagnostics: every poll, motion calculations, JSON parse errors, etc. Useful when debugging.                |
 
 ### HomeKit characteristics exposed
 
@@ -241,7 +327,7 @@ The accessory implements the standard HAP `WindowCovering` service plus an
 
 | Characteristic        | Direction  | Notes                                                                                                                                                                         |
 | --------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CurrentPosition`     | read       | Returns the cached last-known position immediately; never blocks on the network. Polled in the background when `pos_url` is set.                                              |
+| `CurrentPosition`     | read       | Returns the cached last-known position immediately; never blocks on the network. Polled in the background when `pos_url` is set, and persisted across Homebridge restarts.    |
 | `TargetPosition`      | read/write | Writes trigger the move pipeline. Optionally debounced via `set_debounce_ms`.                                                                                                 |
 | `PositionState`       | read       | `INCREASING` / `DECREASING` / `STOPPED`.                                                                                                                                      |
 | `ObstructionDetected` | read       | Set on retry-exhausted failures (after `obstruction_threshold` consecutive failures). Clears on the next success.                                                             |
@@ -252,27 +338,11 @@ The accessory implements the standard HAP `WindowCovering` service plus an
 should rely on `HoldPosition`. The Stop button is kept for setups that
 already have automations bound to that switch.
 
-### Obstruction reporting
-
-`ObstructionDetected` is set to `true` when an HTTP request fails after
-exhausting its retry budget. By default a single failure trips it; tune
-`obstruction_threshold` (above) to require N consecutive failures first.
-It clears automatically on the next successful request, and is also
-cleared at the start of every new move attempt so a user retrying clears
-any stale obstruction.
-
-### Tested device configurations
-
-A community-maintained list of working setups for Tasmota, Bond, Louvolite Neo
-Smart Blinds, and others lives on the
-[Wiki](https://github.com/dxdc/homebridge-blinds/wiki/Tested-configurations).
-
-Ready-to-edit example configurations for the most common scenarios — basic,
-awning, exact-position, position polling, push webhook, non-linear motion,
-unreliable RF, Tasmota, Bond, Louvolite, shell scripts, and multi-blind
-setups — are in the [`examples/`](./examples) directory.
-
 ### Full advanced example
+
+A maximalist example showing every supported option at once. **You almost
+certainly don't need most of this** — copy from [`examples/`](./examples)
+instead and only reach for these knobs if your blind genuinely needs them.
 
 ```json
 {
@@ -345,11 +415,16 @@ list of changes.
 
 ```sh
 npm install
-npm run lint        # ESLint (flat config, typescript-eslint)
-npm run typecheck   # tsc --noEmit
-npm test            # vitest
-npm run build       # emits dist/
+npm run lint         # ESLint (flat config, typescript-eslint)
+npm run typecheck    # tsc --noEmit
+npm test             # vitest
+npm run build        # emits dist/
+npm run format       # prettier --write
+npm run smoke        # end-to-end packaging check (requires npm run build first)
 ```
+
+`prepublishOnly` chains `format:check`, `lint`, `typecheck`, `test`, `build`,
+and `smoke`, so a clean `npm publish` proves the whole pipeline.
 
 ## How to contribute
 

@@ -2,7 +2,7 @@
     "pluginAlias": "BlindsHTTP",
     "pluginType": "accessory",
     "singular": false,
-    "headerDisplay": "Control HTTP-based blinds, shades, awnings, and shutters.\n\nFull documentation, tested device configurations (Tasmota, Bond, Louvolite, etc.), and bug reports: [github.com/dxdc/homebridge-blinds](https://github.com/dxdc/homebridge-blinds).\n\n**Quick tips:** include `%%POS%%` in any URL or body to inject the target position. Use a `file://` prefix to run a shell command instead of an HTTP request.",
+    "headerDisplay": "Control HTTP, REST, MQTT, shell-script, and CLI-driven blinds, shades, awnings, and shutters from HomeKit.\n\nDocs, tested device configs (Tasmota, Bond, Louvolite, etc.), and issues: [github.com/dxdc/homebridge-blinds](https://github.com/dxdc/homebridge-blinds).\n\n**Tips:**\n- Include `%%POS%%` in any URL or body to inject the target position (0–100).\n- Prefix a URL with `file://` to run a shell command instead of an HTTP request.\n- Only `name` is required. Configure just the URLs you have — leave the rest blank.",
     "schema": {
         "type": "object",
         "properties": {
@@ -131,7 +131,8 @@
             "battery_jsonata": {
                 "title": "JSONata for battery URL response",
                 "type": "string",
-                "placeholder": "BatteryLevel"
+                "placeholder": "BatteryLevel",
+                "description": "JSONata expression that extracts the battery percentage (0–100) from the response body. Example: `BatteryLevel` returns the value of that field."
             },
             "battery_low_threshold": {
                 "title": "Low-battery threshold (%)",
@@ -142,6 +143,8 @@
                 "description": "iOS shows the low-battery indicator when BatteryLevel is at or below this value."
             },
             "http_success_codes": {
+                "title": "HTTP success codes",
+                "description": "HTTP status codes that count as a successful request. Defaults to [200].",
                 "type": "array",
                 "notitle": true,
                 "uniqueItems": true,
@@ -154,6 +157,8 @@
                 }
             },
             "show_favorite_buttons": {
+                "title": "Favorite-position switches",
+                "description": "List of positions (0–100) to expose as separate HomeKit switches for one-tap shortcuts. Example: 25, 50, 75.",
                 "type": "array",
                 "notitle": true,
                 "uniqueItems": true,
@@ -168,31 +173,37 @@
                 }
             },
             "webhook_port": {
-                "title": "Port",
+                "title": "Webhook port",
                 "type": "integer",
                 "placeholder": 51828,
                 "minimum": 1,
-                "maximum": 65535
+                "maximum": 65535,
+                "description": "Port the position webhook listens on. Leave blank to disable. Send any HTTP method to /?pos=N (sets current+target) or /?target=N (sets target only, no motor command). Values are 0–100."
             },
             "webhook_http_auth_user": {
                 "title": "Username",
-                "type": "string"
+                "type": "string",
+                "description": "Optional Basic Auth username. When set, requests must authenticate."
             },
             "webhook_http_auth_pass": {
                 "title": "Password",
-                "type": "string"
+                "type": "string",
+                "description": "Optional Basic Auth password. Required when a username is set."
             },
             "webhook_https": {
                 "title": "Use SSL",
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Listen on HTTPS instead of HTTP. A self-signed certificate is generated automatically if no key/cert is provided."
             },
             "webhook_https_keyfile": {
                 "title": "Path to private key",
-                "type": "string"
+                "type": "string",
+                "description": "Optional path to a PEM-encoded TLS private key. Auto-generated and cached if omitted."
             },
             "webhook_https_certfile": {
                 "title": "Path to certificate",
-                "type": "string"
+                "type": "string",
+                "description": "Optional path to a PEM-encoded TLS certificate. Auto-generated and cached if omitted."
             },
             "invert_position": {
                 "title": "Invert Position",
