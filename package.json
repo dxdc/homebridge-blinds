@@ -79,7 +79,7 @@
     "license": "ISC",
     "dependencies": {
         "jsonata": "^2.0.5",
-        "selfsigned": "^2.4.1"
+        "selfsigned": "^5.5.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.17.0",
