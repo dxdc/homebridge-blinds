@@ -445,7 +445,6 @@ If this plugin saves you time and you'd like to say thanks:
 - [![PayPal][badge_paypal]][paypal-donations-dxdc] **PayPal** — one-time donations to **dxdc**
 - **Venmo** — one-time donations
   ![Venmo QR Code](https://raw.githubusercontent.com/dxdc/homebridge-blinds/master/images/venmo.png 'Venmo QR Code')
-- **Bitcoin** — `33sT6xw3tZWAdP2oL4ygbH5TVpVMfk9VW7`
 
 [badge_paypal]: https://img.shields.io/badge/Donate-PayPal-blue.svg
 [paypal-donations-dxdc]: https://paypal.me/ddcaspi
