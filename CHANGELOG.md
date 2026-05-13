@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.1] - 2026-05-13
+
+### Fixed
+
+- **Node 24 support** — `engines.node` now accepts Node 24 in addition
+  to 20 and 22. Previously, Homebridge refused to load the plugin on
+  Node 24 with `requires a Node.js version of ^20.18.0 || ^22.10.0`
+  ([#104](https://github.com/dxdc/homebridge-blinds/issues/104)). The
+  CI and smoke matrices also now exercise Node 24.
+
 ## [3.0.0] - 2026-05-10
 
 > **Drop-in upgrade.** Every working v2 configuration continues to work

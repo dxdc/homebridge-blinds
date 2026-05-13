@@ -1,7 +1,7 @@
 {
     "name": "homebridge-blinds",
     "displayName": "Blinds (HTTP)",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "description": "Homebridge plugin to control HTTP, REST, MQTT, shell-script and CLI-driven blinds, shades, awnings, shutters, and roller curtains in Apple HomeKit.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
