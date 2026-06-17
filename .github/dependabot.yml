@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    ignore:
+      # @types/node tracks the lowest supported Node engine (20.x); never bump major.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
     groups:
       # Batch routine production dependency bumps (minor/patch) into one PR.
       # Major bumps stay ungrouped so they get individual review.
