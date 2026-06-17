@@ -6,19 +6,34 @@ updates:
       interval: weekly
     open-pull-requests-limit: 10
     groups:
-      typescript-eslint:
+      # Batch routine production dependency bumps (minor/patch) into one PR.
+      # Major bumps stay ungrouped so they get individual review.
+      production-dependencies:
+        applies-to: version-updates
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
         patterns:
-          - 'typescript-eslint'
-          - '@typescript-eslint/*'
-      vitest:
+          - '*'
+      # Batch routine development dependency bumps (minor/patch) into one PR.
+      development-dependencies:
+        applies-to: version-updates
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
         patterns:
-          - 'vitest'
-          - '@vitest/*'
-      types:
-        patterns:
-          - '@types/*'
+          - '*'
+    # Note: groups above only apply to version-updates, so security updates are
+    # intentionally left ungrouped and arrive as individual PRs to stand out.
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - '*'
