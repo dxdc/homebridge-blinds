@@ -42,10 +42,13 @@ updates:
     # Note: groups above only apply to version-updates, so security updates are
     # intentionally left ungrouped and arrive as individual PRs to stand out.
     #
-    # The groups batch minor/patch only, so majors still arrive individually.
-    # That now includes indirect deps: if transitive majors turn out to be noisy,
-    # add a third group covering major rather than folding major into the two
-    # groups above, which would give up individual review of direct majors.
+    # update-types gates on the *direct* dependency's semver jump, not on each
+    # transitive's, so an indirect major rides along inside the group whenever its
+    # parent moves by a minor or patch (chalk 5 -> 6 arrived this way, carried by
+    # homebridge 2.1.1 -> 2.3.0). Covering indirect deps therefore does not fan
+    # majors out into separate PRs: the first run under this config produced 29
+    # package updates as 2 grouped PRs. Only *direct* majors arrive individually,
+    # which is the intended review path for them.
 
   - package-ecosystem: github-actions
     directory: /
