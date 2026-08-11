@@ -87,7 +87,7 @@ jobs:
                   EOF
 
                   set +e
-                  timeout --signal=SIGTERM --preserve-status 12s \
+                  timeout --signal=SIGTERM 12s \
                       ./node_modules/.bin/homebridge \
                           --user-storage-path "$STAGE/.homebridge" \
                           --debug \
@@ -97,8 +97,12 @@ jobs:
 
                   tail -n 80 "$STAGE/homebridge.log"
 
-                  # `timeout` returns 143 on SIGTERM (process was still running, what we want).
-                  # Exit 0 means Homebridge bailed early, which is a failure.
-                  [ "$STATUS" != "0" ] || { echo "::error::Homebridge exited before timeout"; exit 1; }
+                  # `timeout` returns 124 when it had to stop the process, i.e. Homebridge
+                  # stayed up for the full window, which is what we want. Any other status is
+                  # Homebridge's own exit code, meaning it bailed early.
+                  # Note: do not add `--preserve-status` here. It replaces the 124 with the
+                  # exit code of the process, and Homebridge 2.x exits 0 on a clean SIGTERM
+                  # shutdown, making a healthy run indistinguishable from an early exit.
+                  [ "$STATUS" = "124" ] || { echo "::error::Homebridge exited before timeout (status ${STATUS})"; exit 1; }
                   grep -q "homebridge-blinds" "$STAGE/homebridge.log" || { echo "::error::plugin not loaded"; exit 1; }
                   grep -q "Smoke Test Blind" "$STAGE/homebridge.log" || { echo "::error::accessory not initialized"; exit 1; }
