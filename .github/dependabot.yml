@@ -5,6 +5,15 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # Version updates cover only direct dependencies by default, which left
+    # lockfile transitives to move solely via security updates. Those bump to the
+    # *minimum* version that closes the advisory they were opened for, so the pins
+    # went stale the moment a broader advisory landed (brace-expansion sat at
+    # 5.0.7 against an advisory covering everything through 5.0.8). Covering
+    # indirect deps keeps the lockfile current through routine weekly updates
+    # instead of relying on security PRs to carry it.
+    allow:
+      - dependency-type: all
     ignore:
       # @types/node tracks the lowest supported Node engine (20.x); never bump major.
       - dependency-name: '@types/node'
@@ -32,6 +41,11 @@ updates:
           - '*'
     # Note: groups above only apply to version-updates, so security updates are
     # intentionally left ungrouped and arrive as individual PRs to stand out.
+    #
+    # The groups batch minor/patch only, so majors still arrive individually.
+    # That now includes indirect deps: if transitive majors turn out to be noisy,
+    # add a third group covering major rather than folding major into the two
+    # groups above, which would give up individual review of direct majors.
 
   - package-ecosystem: github-actions
     directory: /
