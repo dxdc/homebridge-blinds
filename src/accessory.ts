@@ -609,8 +609,7 @@ export class BlindsAccessory implements AccessoryPlugin {
         }
         this.batteryService = new ServiceCtor(`${this.config.name} Battery`);
         const charging = (this.Characteristic as unknown as Record<string, unknown>).ChargingState as
-            | { NOT_CHARGEABLE?: number }
-            | undefined;
+            { NOT_CHARGEABLE?: number } | undefined;
         this.batteryService
             .getCharacteristic((this.Characteristic as unknown as Record<string, unknown>).BatteryLevel as never)
             .updateValue(100);
