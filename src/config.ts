@@ -174,22 +174,18 @@ export function normalizeConfig(raw: Record<string, unknown>, log: Logger): Blin
         false;
     const sendPositionJsonata =
         (firstDefined([raw.send_pos_jsonata, (raw as Record<string, unknown>).map_send_jsonata]) as
-            | string
-            | undefined) || false;
+            string | undefined) || false;
 
     // Fallback merged into every request that doesn't specify its own
     // method/headers/body. String form (just the method) is coerced to
     // an object for uniform handling.
     const rawHttpOptions = firstDefined([raw.http_options, (raw as Record<string, unknown>).http_method]) as
-        | string
-        | Partial<HttpEndpoint>
-        | undefined;
+        string | Partial<HttpEndpoint> | undefined;
     const httpOptions: Partial<HttpEndpoint> =
         typeof rawHttpOptions === 'string' ? { method: rawHttpOptions } : (rawHttpOptions ?? { method: 'POST' });
 
     const successCodes = (firstDefined([raw.http_success_codes, (raw as Record<string, unknown>).success_codes]) as
-        | number[]
-        | undefined) ?? [200];
+        number[] | undefined) ?? [200];
 
     const maxHttpAttempts = Math.max(toInt(raw.max_http_attempts, DEFAULT_MAX_ATTEMPTS), 1);
     const retryDelay = toInt(raw.retry_delay, DEFAULT_RETRY_DELAY_MS, MIN_RETRY_DELAY_MS);
