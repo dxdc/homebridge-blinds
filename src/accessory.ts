@@ -141,8 +141,9 @@ export class BlindsAccessory implements AccessoryPlugin {
 
         if (this.config.batteryUrl) {
             this.buildBatteryService(logger);
-            setImmediate(() => this.pollBattery());
-            this.batteryPollInterval = setInterval(() => this.pollBattery(), this.config.batteryPollInterval);
+            // pollBattery() catches and logs its own failures, so it never rejects.
+            setImmediate(() => void this.pollBattery());
+            this.batteryPollInterval = setInterval(() => void this.pollBattery(), this.config.batteryPollInterval);
             this.batteryPollInterval.unref?.();
         }
 

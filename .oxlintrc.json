@@ -1,6 +1,9 @@
 {
     "$schema": "./node_modules/oxlint/configuration_schema.json",
     "plugins": ["typescript"],
+    "options": {
+        "typeAware": true
+    },
     "categories": {
         "correctness": "off"
     },
@@ -78,12 +81,15 @@
         "require-yield": "error",
         "use-isnan": "error",
         "valid-typeof": "error",
+        "typescript/await-thenable": "error",
         "typescript/ban-ts-comment": "error",
         "typescript/no-duplicate-enum-values": "error",
         "typescript/no-empty-object-type": "error",
         "typescript/no-explicit-any": "warn",
         "typescript/no-extra-non-null-assertion": "error",
+        "typescript/no-floating-promises": "error",
         "typescript/no-misused-new": "error",
+        "typescript/no-misused-promises": "error",
         "typescript/no-namespace": "error",
         "typescript/no-non-null-asserted-optional-chain": "error",
         "typescript/no-require-imports": "error",
