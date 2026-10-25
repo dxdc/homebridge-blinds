@@ -415,7 +415,7 @@ list of changes.
 
 ```sh
 npm install
-npm run lint         # ESLint (flat config, typescript-eslint)
+npm run lint         # oxlint (.oxlintrc.json), type-aware via oxlint-tsgolint
 npm run typecheck    # tsc --noEmit
 npm test             # vitest
 npm run build        # emits dist/
