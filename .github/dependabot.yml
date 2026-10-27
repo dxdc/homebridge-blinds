@@ -19,6 +19,11 @@ updates:
       - dependency-name: '@types/node'
         update-types:
           - version-update:semver-major
+      # vitest 5 requires Node 22+ and @types/node 22+; stay on 4.x while Node 20
+      # is still supported. Drop this rule along with Node 20.
+      - dependency-name: 'vitest'
+        update-types:
+          - version-update:semver-major
     groups:
       # Batch routine production dependency bumps (minor/patch) into one PR.
       # Major bumps stay ungrouped so they get individual review.
