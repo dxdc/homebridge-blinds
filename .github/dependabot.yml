@@ -2,16 +2,22 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    # Monthly rather than weekly: each run's grouped PRs supersede the previous
+    # run's, and updates here get landed in batches, so a weekly cadence mostly
+    # produced PRs that were closed unmerged a week later.
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 10
+      interval: monthly
+    # Version updates only; security updates have their own fixed limit. A normal
+    # run needs at most the three groups below plus the odd direct major, so this
+    # mainly caps how far an unexpected fan-out of individual PRs can go.
+    open-pull-requests-limit: 5
     # Version updates cover only direct dependencies by default, which left
     # lockfile transitives to move solely via security updates. Those bump to the
     # *minimum* version that closes the advisory they were opened for, so the pins
     # went stale the moment a broader advisory landed (brace-expansion sat at
     # 5.0.7 against an advisory covering everything through 5.0.8). Covering
-    # indirect deps keeps the lockfile current through routine weekly updates
-    # instead of relying on security PRs to carry it.
+    # indirect deps keeps the lockfile current through routine updates instead of
+    # relying on security PRs to carry it.
     allow:
       - dependency-type: all
     ignore:
@@ -26,7 +32,8 @@ updates:
           - version-update:semver-major
     groups:
       # Batch routine production dependency bumps (minor/patch) into one PR.
-      # Major bumps stay ungrouped so they get individual review.
+      # Major bumps of direct dependencies stay ungrouped so they get individual
+      # review.
       production-dependencies:
         applies-to: version-updates
         dependency-type: production
@@ -44,21 +51,53 @@ updates:
           - patch
         patterns:
           - '*'
+      # Catches transitive dependencies that a parent pins below their latest
+      # major. A group's update-types is checked against the newest version on
+      # the registry (minus ignored versions), not against the version the update
+      # actually lands on. So when @peculiar/asn1-* 3.0.0 shipped while
+      # @peculiar/x509 still required ^2, every asn1 package was rejected from
+      # production-dependencies as a "major" and opened its own PR, each bumping
+      # only 2.11.0 -> 2.11.1 (nine PRs in one run). 36 lockfile packages were in
+      # that state when this was written, so ignoring them by name does not
+      # scale.
+      #
+      # Groups whose update-types do not overlap both receive a dependency, so a
+      # package the minor/patch groups reject lands here instead of in an
+      # individual PR. Its parent's range still applies, so these remain in-range
+      # bumps, never real majors.
+      #
+      # Direct dependencies are excluded so their genuine majors keep arriving
+      # individually. Keep this list in sync with package.json; a direct
+      # dependency missing from it has its majors grouped here instead.
+      pinned-transitive-dependencies:
+        applies-to: version-updates
+        update-types:
+          - major
+        patterns:
+          - '*'
+        exclude-patterns:
+          - '@types/node'
+          - 'homebridge'
+          - 'jsonata'
+          - 'oxlint'
+          - 'oxlint-tsgolint'
+          - 'prettier'
+          - 'rimraf'
+          - 'selfsigned'
+          - 'typescript'
+          - 'vitest'
     # Note: groups above only apply to version-updates, so security updates are
     # intentionally left ungrouped and arrive as individual PRs to stand out.
     #
-    # update-types gates on the *direct* dependency's semver jump, not on each
-    # transitive's, so an indirect major rides along inside the group whenever its
-    # parent moves by a minor or patch (chalk 5 -> 6 arrived this way, carried by
-    # homebridge 2.1.1 -> 2.3.0). Covering indirect deps therefore does not fan
-    # majors out into separate PRs: the first run under this config produced 29
-    # package updates as 2 grouped PRs. Only *direct* majors arrive individually,
-    # which is the intended review path for them.
+    # The reverse case does ride along: an indirect major lands inside a group
+    # whenever its parent moves by a minor or patch and the parent's new range
+    # requires it (chalk 5 -> 6 arrived this way, carried by homebridge
+    # 2.1.1 -> 2.3.0).
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       github-actions:
         applies-to: version-updates
